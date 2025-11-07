@@ -76,6 +76,8 @@ const PropertyImageGallery: React.FC<PropertyImageGalleryProps> = ({ photos, pro
               width="100%"
               height="100%"
               objectFit="cover"
+              loading="eager"
+              decoding="async"
               onError={(e) => {
                 (e.target as HTMLImageElement).src = 'https://placehold.co/800x600/e2e8f0/64748b?text=Image+Error';
               }}
@@ -112,6 +114,8 @@ const PropertyImageGallery: React.FC<PropertyImageGalleryProps> = ({ photos, pro
                   width="100%"
                   height="100%"
                   objectFit="cover"
+                  loading="lazy"
+                  decoding="async"
                   onError={(e) => {
                     (e.target as HTMLImageElement).src = 'https://placehold.co/400x300/e2e8f0/64748b?text=Image';
                   }}

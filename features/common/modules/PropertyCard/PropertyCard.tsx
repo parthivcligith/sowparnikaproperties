@@ -117,6 +117,8 @@ const PropertyCard = (property: Object) => {
                     as="img"
                     src={image}
                     alt={`${title || 'Property'} - Image ${index + 1}`}
+                    loading={index === 0 ? 'eager' : 'lazy'}
+                    decoding="async"
                     onError={(e) => {
                       (e.target as HTMLImageElement).src = 'https://placehold.co/800x600/e2e8f0/64748b?text=Image+Not+Available';
                     }}

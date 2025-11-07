@@ -88,6 +88,8 @@ const PropertyThumbnailSlider = ({ photos }: { photos: string[] }) => {
               src={photo} 
               alt={`Property image ${index + 1}`}
               crossOrigin="anonymous"
+              loading={index === 0 ? 'eager' : 'lazy'}
+              decoding="async"
               onError={(e) => {
                 console.error('Image failed to load:', photo);
                 console.error('Error details:', {
@@ -102,7 +104,6 @@ const PropertyThumbnailSlider = ({ photos }: { photos: string[] }) => {
                   console.log('Image loaded successfully:', photo);
                 }
               }}
-              loading="lazy"
             />
             </SwiperSlide>
           ))}
@@ -124,11 +125,12 @@ const PropertyThumbnailSlider = ({ photos }: { photos: string[] }) => {
               src={photo} 
               alt={`Thumbnail ${index + 1}`}
               crossOrigin="anonymous"
+              loading="lazy"
+              decoding="async"
               onError={(e) => {
                 console.error('Thumbnail failed to load:', photo);
                 (e.target as HTMLImageElement).src = 'https://placehold.co/200x150/e2e8f0/64748b?text=Error';
               }}
-              loading="lazy"
             />
           </SwiperSlide>
         ))}

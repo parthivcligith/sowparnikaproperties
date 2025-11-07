@@ -195,6 +195,8 @@ const PropertyImageLightbox: React.FC<PropertyImageLightboxProps> = ({
                       as="img"
                       src={image}
                       alt={`Property image ${index + 1}`}
+                      loading={index === initialIndex ? 'eager' : 'lazy'}
+                      decoding="async"
                       onError={(e) => {
                         (e.target as HTMLImageElement).src =
                           'https://placehold.co/1200x800/e2e8f0/64748b?text=Image+Not+Available';

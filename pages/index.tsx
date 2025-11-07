@@ -1,12 +1,27 @@
 import React, { useState, useEffect } from 'react';
 import { Box } from '@chakra-ui/react';
+import dynamic from 'next/dynamic';
 import HeroSection from '@/features/Home/components/HeroSection/HeroSection';
-import PropertyCarousel from '@/features/Home/components/PropertyCarousel/PropertyCarousel';
 import Marquee from '@/features/Home/components/Marquee/Marquee';
-import MeetTheTeam from '@/features/Home/components/MeetTheTeam';
-import Partners from '@/features/Home/components/Partners';
-import Testimonials from '@/features/Home/components/Testimonials';
 import DefaultLayout from '@/features/Layout/DefaultLayout';
+
+// Lazy load heavy components
+const PropertyCarousel = dynamic(() => import('@/features/Home/components/PropertyCarousel/PropertyCarousel'), {
+  loading: () => <Box p={8} textAlign="center">Loading properties...</Box>,
+  ssr: false,
+});
+
+const MeetTheTeam = dynamic(() => import('@/features/Home/components/MeetTheTeam'), {
+  ssr: false,
+});
+
+const Partners = dynamic(() => import('@/features/Home/components/Partners'), {
+  ssr: false,
+});
+
+const Testimonials = dynamic(() => import('@/features/Home/components/Testimonials'), {
+  ssr: false,
+});
 
 export default function Home() {
   const [trendingProperties, setTrendingProperties] = useState<any[]>([]);

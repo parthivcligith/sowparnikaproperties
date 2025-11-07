@@ -9,6 +9,16 @@ const nextConfig = {
   // Disable image optimization if causing issues
   images: {
     domains: ['placehold.co', 'via.placeholder.com'],
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: '**.supabase.co',
+      },
+      {
+        protocol: 'https',
+        hostname: '**.supabase.in',
+      },
+    ],
     unoptimized: false,
   },
 }
