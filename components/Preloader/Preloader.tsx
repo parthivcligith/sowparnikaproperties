@@ -81,7 +81,7 @@ const Preloader: React.FC<PreloaderProps> = ({ onComplete }) => {
           right={0}
           bottom={0}
           zIndex={9999}
-          bg="gray.900"
+          bg="white"
           display="flex"
           alignItems="center"
           justifyContent="center"
@@ -98,8 +98,8 @@ const Preloader: React.FC<PreloaderProps> = ({ onComplete }) => {
             opacity={0.03}
             sx={{
               backgroundImage: `
-                linear-gradient(rgba(255, 255, 255, 0.1) 1px, transparent 1px),
-                linear-gradient(90deg, rgba(255, 255, 255, 0.1) 1px, transparent 1px)
+                linear-gradient(rgba(0, 0, 0, 0.1) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(0, 0, 0, 0.1) 1px, transparent 1px)
               `,
               backgroundSize: '60px 60px',
             }}
@@ -114,7 +114,7 @@ const Preloader: React.FC<PreloaderProps> = ({ onComplete }) => {
             height="100%"
             opacity={0.05}
             sx={{
-              backgroundImage: 'repeating-linear-gradient(45deg, transparent, transparent 2px, rgba(255, 255, 255, 0.1) 2px, rgba(255, 255, 255, 0.1) 4px)',
+              backgroundImage: 'repeating-linear-gradient(45deg, transparent, transparent 2px, rgba(0, 0, 0, 0.1) 2px, rgba(0, 0, 0, 0.1) 4px)',
             }}
           />
 
@@ -132,20 +132,21 @@ const Preloader: React.FC<PreloaderProps> = ({ onComplete }) => {
           >
             {/* Company Name - Large, Bold, High Contrast */}
             <Text
-              fontSize={{ base: '3xl', md: '5xl', lg: '6xl' }}
+              fontSize={{ base: '1.5rem', md: '2.5rem', lg: '3rem' }}
               fontWeight="700"
-              color="white"
+              color="gray.900"
               mb={16}
               fontFamily="'Playfair Display', serif"
-              letterSpacing="0.15em"
+              letterSpacing={{ base: '0.1em', md: '0.15em' }}
               textAlign="center"
               textTransform="uppercase"
               lineHeight="1.1"
+              whiteSpace="nowrap"
+              px={4}
               sx={{
                 animation: `${slideIn} 0.8s ease-out`,
                 transform: 'scaleY(1.2)',
                 display: 'inline-block',
-                textShadow: '0 4px 20px rgba(0, 0, 0, 0.5)',
                 fontFeatureSettings: '"liga" 1, "kern" 1',
                 WebkitFontSmoothing: 'antialiased',
                 MozOsxFontSmoothing: 'grayscale',
@@ -159,18 +160,18 @@ const Preloader: React.FC<PreloaderProps> = ({ onComplete }) => {
               {/* Progress Bar Background - Sharp corners */}
               <Box
                 height="3px"
-                bg="rgba(255, 255, 255, 0.1)"
+                bg="rgba(0, 0, 0, 0.1)"
                 borderRadius="0"
                 overflow="hidden"
                 position="relative"
                 border="1px solid"
-                borderColor="rgba(255, 255, 255, 0.2)"
+                borderColor="rgba(0, 0, 0, 0.2)"
               >
                 {/* Progress Fill - Sharp, crisp */}
                 <Box
                   height="100%"
                   width={`${progress}%`}
-                  bg="white"
+                  bg="gray.900"
                   borderRadius="0"
                   transition="width 0.3s ease-out"
                   position="relative"
@@ -182,7 +183,7 @@ const Preloader: React.FC<PreloaderProps> = ({ onComplete }) => {
                       left: 0,
                       right: 0,
                       bottom: 0,
-                      background: 'linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent)',
+                      background: 'linear-gradient(90deg, transparent, rgba(0, 0, 0, 0.3), transparent)',
                       animation: `${shimmer} 2s infinite`,
                       backgroundSize: '200% 100%',
                     },
@@ -195,13 +196,13 @@ const Preloader: React.FC<PreloaderProps> = ({ onComplete }) => {
                 <Box
                   width="20px"
                   height="1px"
-                  bg="rgba(255, 255, 255, 0.3)"
+                  bg="rgba(0, 0, 0, 0.3)"
                   borderRadius="0"
                 />
                 <Box
                   width="20px"
                   height="1px"
-                  bg="rgba(255, 255, 255, 0.3)"
+                  bg="rgba(0, 0, 0, 0.3)"
                   borderRadius="0"
                 />
               </Flex>
@@ -210,7 +211,7 @@ const Preloader: React.FC<PreloaderProps> = ({ onComplete }) => {
             {/* Progress Percentage - Elegant Typography */}
             <Text
               fontSize={{ base: 'lg', md: 'xl' }}
-              color="white"
+              color="gray.900"
               fontFamily="'Playfair Display', serif"
               letterSpacing="0.2em"
               fontWeight="600"
@@ -226,7 +227,7 @@ const Preloader: React.FC<PreloaderProps> = ({ onComplete }) => {
             {/* Loading Text - Minimal, Elegant */}
             <Text
               fontSize="xs"
-              color="rgba(255, 255, 255, 0.6)"
+              color="rgba(0, 0, 0, 0.6)"
               fontFamily="'Inter', sans-serif"
               letterSpacing="0.3em"
               textTransform="uppercase"
@@ -252,20 +253,20 @@ const Preloader: React.FC<PreloaderProps> = ({ onComplete }) => {
               <Box
                 flex="1"
                 height="1px"
-                bg="rgba(255, 255, 255, 0.2)"
+                bg="rgba(0, 0, 0, 0.2)"
                 borderRadius="0"
               />
               <Box
                 width="4px"
                 height="4px"
-                bg="white"
+                bg="gray.900"
                 borderRadius="0"
                 transform="rotate(45deg)"
               />
               <Box
                 flex="1"
                 height="1px"
-                bg="rgba(255, 255, 255, 0.2)"
+                bg="rgba(0, 0, 0, 0.2)"
                 borderRadius="0"
               />
             </Flex>
@@ -279,7 +280,7 @@ const Preloader: React.FC<PreloaderProps> = ({ onComplete }) => {
             width="60px"
             height="60px"
             border="1px solid"
-            borderColor="rgba(255, 255, 255, 0.1)"
+            borderColor="rgba(0, 0, 0, 0.1)"
             borderRight="none"
             borderBottom="none"
             borderRadius="0"
@@ -292,7 +293,7 @@ const Preloader: React.FC<PreloaderProps> = ({ onComplete }) => {
             width="60px"
             height="60px"
             border="1px solid"
-            borderColor="rgba(255, 255, 255, 0.1)"
+            borderColor="rgba(0, 0, 0, 0.1)"
             borderLeft="none"
             borderBottom="none"
             borderRadius="0"
@@ -305,7 +306,7 @@ const Preloader: React.FC<PreloaderProps> = ({ onComplete }) => {
             width="60px"
             height="60px"
             border="1px solid"
-            borderColor="rgba(255, 255, 255, 0.1)"
+            borderColor="rgba(0, 0, 0, 0.1)"
             borderRight="none"
             borderTop="none"
             borderRadius="0"
@@ -318,7 +319,7 @@ const Preloader: React.FC<PreloaderProps> = ({ onComplete }) => {
             width="60px"
             height="60px"
             border="1px solid"
-            borderColor="rgba(255, 255, 255, 0.1)"
+            borderColor="rgba(0, 0, 0, 0.1)"
             borderLeft="none"
             borderTop="none"
             borderRadius="0"
