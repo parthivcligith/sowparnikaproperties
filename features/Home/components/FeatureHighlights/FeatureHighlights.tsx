@@ -4,7 +4,7 @@ import { FiHome } from 'react-icons/fi';
 import { TbUserCheck, TbRefresh } from 'react-icons/tb';
 
 interface FeatureItem {
-  icon: React.ReactElement;
+  iconComponent: React.ComponentType<any>;
   title: string;
   description: React.ReactNode;
 }
@@ -12,7 +12,7 @@ interface FeatureItem {
 const FeatureHighlights: React.FC = () => {
   const features: FeatureItem[] = [
     {
-      icon: <FiHome size={48} strokeWidth={1.5} />,
+      iconComponent: FiHome,
       title: "All The World's Luxury Listings",
       description: (
         <>
@@ -21,7 +21,7 @@ const FeatureHighlights: React.FC = () => {
       ),
     },
     {
-      icon: <TbRefresh size={48} strokeWidth={1.5} />,
+      iconComponent: TbRefresh,
       title: "Personalised Discovery",
       description: (
         <>
@@ -30,7 +30,7 @@ const FeatureHighlights: React.FC = () => {
       ),
     },
     {
-      icon: <TbUserCheck size={48} strokeWidth={1.5} />,
+      iconComponent: TbUserCheck,
       title: "Direct Market Contact",
       description: (
         <>
@@ -41,20 +41,20 @@ const FeatureHighlights: React.FC = () => {
   ];
 
   return (
-    <Box bg="gray.50" pt={8} pb={20}>
-      <Container maxW="container.xl">
+    <Box bg="gray.50" pt={{ base: 4, md: 8 }} pb={{ base: 8, md: 20 }}>
+      <Container maxW="container.xl" px={{ base: 4, md: 6 }}>
         {/* Logo */}
         <Box 
           display="flex"
           justifyContent="center"
           alignItems="center"
-          mb={8}
+          mb={{ base: 4, md: 8 }}
         >
           <Box
             as="img"
             src="/logo.png"
             alt="Sowparnika Properties"
-            height={{ base: '80px', md: '120px', lg: '150px' }}
+            height={{ base: '40px', md: '120px', lg: '150px' }}
             width="auto"
             objectFit="contain"
             loading="eager"
@@ -62,10 +62,10 @@ const FeatureHighlights: React.FC = () => {
         </Box>
 
         {/* Main Heading - Split into two lines */}
-        <Box mb={16}>
+        <Box mb={{ base: 6, md: 16 }}>
           <Heading
             as="h1"
-            fontSize={{ base: '3xl', md: '4xl', lg: '5xl' }}
+            fontSize={{ base: 'xl', md: '4xl', lg: '5xl' }}
             fontWeight="600"
             fontFamily="'Playfair Display', serif"
             textAlign="center"
@@ -79,16 +79,21 @@ const FeatureHighlights: React.FC = () => {
         </Box>
 
         {/* Feature Grid */}
-        <Grid templateColumns={{ base: '1fr', md: 'repeat(3, 1fr)' }} gap={12}>
+        <Grid templateColumns={{ base: '1fr', md: 'repeat(3, 1fr)' }} gap={{ base: 4, md: 12 }}>
           {features.map((feature, index) => (
             <GridItem key={index}>
-              <VStack spacing={6} align="center" textAlign="center">
-                <Box color="gray.900" mb={2}>
-                  {feature.icon}
+              <VStack spacing={{ base: 2, md: 6 }} align="center" textAlign="center">
+                <Box color="gray.900" mb={{ base: 0, md: 2 }}>
+                  <Box display={{ base: 'block', md: 'none' }}>
+                    <feature.iconComponent size={24} strokeWidth={1.5} />
+                  </Box>
+                  <Box display={{ base: 'none', md: 'block' }}>
+                    <feature.iconComponent size={48} strokeWidth={1.5} />
+                  </Box>
                 </Box>
                 <Heading
                   as="h3"
-                  fontSize={{ base: 'lg', md: 'xl' }}
+                  fontSize={{ base: 'sm', md: 'xl' }}
                   fontWeight="700"
                   fontFamily="'Playfair Display', serif"
                   color="gray.900"
@@ -98,9 +103,9 @@ const FeatureHighlights: React.FC = () => {
                 </Heading>
                 <Box
                   as="div"
-                  fontSize={{ base: 'sm', md: 'md' }}
+                  fontSize={{ base: 'xs', md: 'md' }}
                   color="gray.900"
-                  lineHeight="1.7"
+                  lineHeight={{ base: '1.4', md: '1.7' }}
                   fontFamily="'Bodoni Moda', serif"
                   fontWeight="400"
                   maxW="400px"
