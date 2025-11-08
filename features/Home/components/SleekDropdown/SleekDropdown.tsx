@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Box, Text, Icon, Flex } from '@chakra-ui/react';
+import { Box, Text, Icon, Flex, Button } from '@chakra-ui/react';
 import { ChevronDownIcon } from '@chakra-ui/icons';
 
 interface SleekDropdownProps {
@@ -126,15 +126,13 @@ const SleekDropdown: React.FC<SleekDropdownProps> = ({
             w="100%"
           >
             {options.map((option) => (
-              <Box
+              <Button
                 key={option.value}
-                as="button"
                 type="button"
                 flex={{ base: '1 1 calc(33.333% - 8px)', md: 'none' }}
                 minW={{ base: 'calc(33.333% - 8px)', md: 'auto' }}
                 px={{ base: 2, md: 4 }}
                 py={{ base: 2, md: 2.5 }}
-                textAlign="center"
                 fontSize={{ base: 'xs', md: 'sm' }}
                 fontWeight={value === option.value ? '700' : '500'}
                 color={value === option.value ? 'white' : 'gray.900'}
@@ -152,9 +150,11 @@ const SleekDropdown: React.FC<SleekDropdownProps> = ({
                   onChange(option.value);
                   setIsOpen(false);
                 }}
+                h="auto"
+                lineHeight="normal"
               >
                 {option.label}
-              </Box>
+              </Button>
             ))}
           </Flex>
           </Box>
