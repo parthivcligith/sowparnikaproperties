@@ -247,10 +247,10 @@ const LazyPropertyCarousel: React.FC<LazyPropertyCarouselProps> = ({
 
       // Very aggressive debouncing for iOS
       let lastTriggerTime = 0;
-      const MIN_INTERVAL_MS = isIOSRef.current ? 5000 : 3000; // 5 seconds on iOS, 3 seconds elsewhere
+      const MIN_INTERVAL_MS = isIOSRef.current ? 8000 : 3000; // 8 seconds on iOS to prevent reloads, 3 seconds elsewhere
       let isProcessing = false;
       let triggerCount = 0;
-      const MAX_TRIGGERS = 10; // Safety limit to prevent infinite loops
+      const MAX_TRIGGERS = 5; // Reduced limit for iOS to prevent crashes
 
       observerRef.current = new IntersectionObserver(
         (entries) => {
@@ -464,9 +464,18 @@ const LazyPropertyCarousel: React.FC<LazyPropertyCarouselProps> = ({
           sx={{
             '.property-carousel-swiper': {
               width: '100%',
+              touchAction: 'pan-x pan-y', // Allow both horizontal and vertical panning
+              WebkitOverflowScrolling: 'touch', // Smooth scrolling on iOS
+              WebkitTapHighlightColor: 'transparent', // Remove tap highlight on iOS
+              userSelect: 'none', // Prevent text selection during swipe
+              '& .swiper-wrapper': {
+                touchAction: 'pan-x pan-y',
+              },
               '& .swiper-slide': {
                 height: 'auto',
                 display: 'flex',
+                touchAction: 'pan-x pan-y', // Allow both directions
+                WebkitTapHighlightColor: 'transparent',
               },
             },
           }}
@@ -495,10 +504,10 @@ const LazyPropertyCarousel: React.FC<LazyPropertyCarouselProps> = ({
               },
             }}
             autoplay={
-              autoplay && properties.length > 1
+              autoplay && properties.length > 1 && !isIOSRef.current
                 ? {
                     delay: 3000,
-                    disableOnInteraction: false,
+                    disableOnInteraction: true, // Disable on touch to prevent conflicts
                     pauseOnMouseEnter: true,
                   }
                 : false
@@ -507,6 +516,94 @@ const LazyPropertyCarousel: React.FC<LazyPropertyCarouselProps> = ({
             navigation={false}
             className="property-carousel-swiper"
             watchSlidesProgress={true}
+            touchEventsTarget="container"
+            touchRatio={1}
+            threshold={10}
+            longSwipesRatio={0.5}
+            followFinger={true}
+            preventClicks={true}
+            preventClicksPropagation={true}
+            allowTouchMove={true}
+            resistance={true}
+            resistanceRatio={0.85}
+            onTouchStart={(swiper, event) => {
+              // Store initial touch position for iOS
+              try {
+                const touchEvent = event as TouchEvent;
+                if (touchEvent.touches && touchEvent.touches.length === 1) {
+                  const touch = touchEvent.touches[0];
+                  (swiper as any).touchStartX = touch.clientX;
+                  (swiper as any).touchStartY = touch.clientY;
+                  (swiper as any).isScrolling = false;
+                }
+              } catch (error) {
+                // Silently handle errors
+              }
+            }}
+            onTouchMove={(swiper, event) => {
+              // Better touch handling for iOS
+              try {
+                const touchEvent = event as TouchEvent;
+                const swiperAny = swiper as any;
+                if (touchEvent.touches && touchEvent.touches.length === 1 && swiperAny.touchStartX !== undefined && swiperAny.touchStartY !== undefined) {
+                  const touch = touchEvent.touches[0];
+                  const deltaX = Math.abs(touch.clientX - swiperAny.touchStartX);
+                  const deltaY = Math.abs(touch.clientY - swiperAny.touchStartY);
+                  
+                  // Determine if user is scrolling vertically or horizontally
+                  if (deltaY > deltaX && deltaY > 15) {
+                    // Vertical scroll - allow page scroll
+                    swiperAny.isScrolling = true;
+                  } else if (deltaX > deltaY && deltaX > 15) {
+                    // Horizontal swipe - prevent page scroll
+                    swiperAny.isScrolling = false;
+                    if (isIOSRef.current) {
+                      // On iOS, prevent default only for clear horizontal swipes
+                      touchEvent.stopPropagation();
+                    }
+                  }
+                }
+              } catch (error) {
+                // Silently handle errors
+              }
+            }}
+            onTouchEnd={(swiper) => {
+              // Clean up touch state
+              try {
+                const swiperAny = swiper as any;
+                swiperAny.touchStartX = undefined;
+                swiperAny.touchStartY = undefined;
+                swiperAny.isScrolling = false;
+              } catch (error) {
+                // Silently handle errors
+              }
+            }}
+            onSlideChange={() => {
+              // Prevent any side effects during slide change
+              try {
+                // Small delay to ensure smooth transition
+                if (isIOSRef.current) {
+                  // On iOS, add a small delay to prevent conflicts
+                  setTimeout(() => {
+                    // Ensure observer doesn't trigger during slide change
+                    if (observerRef.current && loadMoreRef.current) {
+                      try {
+                        observerRef.current.disconnect();
+                        setTimeout(() => {
+                          if (observerRef.current && loadMoreRef.current && hasMoreRef.current) {
+                            observerRef.current.observe(loadMoreRef.current);
+                          }
+                        }, 500);
+                      } catch (error) {
+                        // Ignore errors
+                      }
+                    }
+                  }, 300);
+                }
+              } catch (error) {
+                // Silently handle errors
+              }
+            }}
           >
             {properties.map((property, index) => {
               const propertyId = property.id || property.externalID || `property-${index}`;
