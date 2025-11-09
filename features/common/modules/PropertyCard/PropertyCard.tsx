@@ -17,7 +17,7 @@ import 'swiper/css/navigation';
 import 'swiper/css/pagination';
 
 const PropertyCard = memo((property: Object) => {
-  const { isAuthenticated, isAdmin } = useAuth();
+  const { isAuthenticated } = useAuth();
   const { isFavorite, toggleFavorite } = useFavorites();
   const toast = useToast();
   const {
@@ -290,25 +290,23 @@ const PropertyCard = memo((property: Object) => {
             display="flex"
             gap={2}
           >
-            {/* Share Button (Admin only) */}
-            {isAdmin && (
-              <IconButton
-                aria-label="Share property"
-                icon={<FiShare2 />}
-                size="sm"
-                bg="white"
-                color="gray.700"
-                borderRadius="full"
-                _hover={{
-                  bg: 'gray.100',
-                  transform: 'scale(1.1)',
-                }}
-                onClick={handleShareClick}
-                transition="all 0.2s"
-                boxShadow="md"
-              />
-            )}
-            {/* Favorite Button */}
+            {/* Share Button - Always visible to all users */}
+            <IconButton
+              aria-label="Share property"
+              icon={<FiShare2 />}
+              size="sm"
+              bg="white"
+              color="gray.700"
+              borderRadius="full"
+              _hover={{
+                bg: 'gray.100',
+                transform: 'scale(1.1)',
+              }}
+              onClick={handleShareClick}
+              transition="all 0.2s"
+              boxShadow="md"
+            />
+            {/* Favorite Button - Only visible when authenticated */}
             {isAuthenticated && (
               <IconButton
                 aria-label={favorite ? 'Remove from favorites' : 'Add to favorites'}

@@ -263,26 +263,24 @@ const PropertyDetail = ({
                     {title}
                   </Text>
                   <HStack spacing={2}>
-                    {/* Share Button (Admin only) */}
-                    {isAdmin && (
-                      <IconButton
-                        aria-label="Share property"
-                        icon={<FiShare2 />}
-                        size="md"
-                        bg="white"
-                        color="gray.700"
-                        border="1px solid"
-                        borderColor="gray.300"
-                        borderRadius="full"
-                        _hover={{
-                          bg: 'gray.100',
-                          transform: 'scale(1.1)',
-                        }}
-                        onClick={handleShareClick}
-                        transition="all 0.2s"
-                      />
-                    )}
-                    {/* Favorite Button */}
+                    {/* Share Button - Always visible to all users */}
+                    <IconButton
+                      aria-label="Share property"
+                      icon={<FiShare2 />}
+                      size="md"
+                      bg="white"
+                      color="gray.700"
+                      border="1px solid"
+                      borderColor="gray.300"
+                      borderRadius="full"
+                      _hover={{
+                        bg: 'gray.100',
+                        transform: 'scale(1.1)',
+                      }}
+                      onClick={handleShareClick}
+                      transition="all 0.2s"
+                    />
+                    {/* Favorite Button - Only visible when authenticated */}
                     {isAuthenticated && (
                       <IconButton
                         aria-label={favorite ? 'Remove from favorites' : 'Add to favorites'}
