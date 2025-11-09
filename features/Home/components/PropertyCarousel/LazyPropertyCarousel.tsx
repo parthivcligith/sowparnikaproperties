@@ -37,12 +37,53 @@ const LazyPropertyCarousel: React.FC<LazyPropertyCarouselProps> = ({
   const [currentPage, setCurrentPage] = useState(1);
   const [total, setTotal] = useState(0);
   const [swiper, setSwiper] = useState<any>(null);
+  
+  // Refs for stable values that don't trigger re-renders
   const loadMoreRef = useRef<HTMLDivElement>(null);
   const hasLoadedRef = useRef(false);
   const isLoadingRef = useRef(false);
-  const loadMoreCallbackRef = useRef<() => void>();
+  const observerRef = useRef<IntersectionObserver | null>(null);
+  const fetchUrlRef = useRef(fetchUrl);
+  const loadMoreLimitRef = useRef(loadMoreLimit);
+  const hasMoreRef = useRef(true);
+  const lastLoadTimeRef = useRef(0);
+  const isMountedRef = useRef(true);
+  const observerSetupRef = useRef(false); // Track if observer has been set up
+  const propertiesLengthRef = useRef(0); // Track properties length without re-renders
 
-  // Initial load
+  // Update refs when props change (doesn't cause re-renders)
+  useEffect(() => {
+    fetchUrlRef.current = fetchUrl;
+    loadMoreLimitRef.current = loadMoreLimit;
+  }, [fetchUrl, loadMoreLimit]);
+
+  // Sync refs with state (without triggering effects)
+  useEffect(() => {
+    hasMoreRef.current = hasMore;
+  }, [hasMore]);
+
+  useEffect(() => {
+    propertiesLengthRef.current = properties.length;
+  }, [properties.length]);
+
+  // Cleanup on unmount
+  useEffect(() => {
+    isMountedRef.current = true;
+    return () => {
+      isMountedRef.current = false;
+      if (observerRef.current) {
+        try {
+          observerRef.current.disconnect();
+        } catch (error) {
+          // Ignore cleanup errors
+        }
+        observerRef.current = null;
+      }
+      observerSetupRef.current = false;
+    };
+  }, []);
+
+  // Initial load - only run once
   useEffect(() => {
     if (hasLoadedRef.current) return;
     hasLoadedRef.current = true;
@@ -50,117 +91,303 @@ const LazyPropertyCarousel: React.FC<LazyPropertyCarouselProps> = ({
     const loadInitialProperties = async () => {
       try {
         setLoading(true);
-        const url = new URL(fetchUrl, window.location.origin);
+        const url = new URL(fetchUrlRef.current, typeof window !== 'undefined' ? window.location.origin : 'http://localhost');
         url.searchParams.set('limit', initialLimit.toString());
         url.searchParams.set('page', '1');
         
         const response = await fetch(url.toString());
+        if (!response.ok) throw new Error('Failed to fetch');
+        
         const data = await response.json();
         
-        if (response.ok && data.properties) {
+        if (!isMountedRef.current) return;
+        
+        if (data.properties && Array.isArray(data.properties)) {
           const transformed = data.properties.map((property: any) => ({
             ...property,
             images: Array.isArray(property.images) ? property.images : [],
           }));
+          
           setProperties(transformed);
+          propertiesLengthRef.current = transformed.length;
           setTotal(data.total || 0);
-          setHasMore((data.total || 0) > transformed.length);
+          const stillHasMore = (data.total || 0) > transformed.length;
+          setHasMore(stillHasMore);
+          hasMoreRef.current = stillHasMore;
         }
       } catch (error) {
         console.error('Error loading properties:', error);
+        if (isMountedRef.current) {
+          setHasMore(false);
+          hasMoreRef.current = false;
+        }
       } finally {
-        setLoading(false);
+        if (isMountedRef.current) {
+          setLoading(false);
+        }
       }
     };
 
     loadInitialProperties();
-  }, [fetchUrl, initialLimit]);
+  }, [initialLimit]);
 
-  // Load more properties
+  // Load more properties - completely stable callback
   const loadMoreProperties = useCallback(async () => {
-    if (isLoadingRef.current || !hasMore || loadingMore) return;
+    // Prevent rapid fire - critical for iOS (3 second minimum)
+    const now = Date.now();
+    if (now - lastLoadTimeRef.current < 3000) {
+      return;
+    }
+    lastLoadTimeRef.current = now;
+
+    // Check conditions using refs
+    if (isLoadingRef.current || !hasMoreRef.current || !isMountedRef.current) {
+      return;
+    }
     
     isLoadingRef.current = true;
     setLoadingMore(true);
 
     try {
-      const nextPage = currentPage + 1;
-      const url = new URL(fetchUrl, window.location.origin);
-      url.searchParams.set('limit', loadMoreLimit.toString());
+      // Get next page using functional update
+      let nextPage = 1;
+      setCurrentPage(prevPage => {
+        nextPage = prevPage + 1;
+        return nextPage;
+      });
+
+      const url = new URL(fetchUrlRef.current, typeof window !== 'undefined' ? window.location.origin : 'http://localhost');
+      url.searchParams.set('limit', loadMoreLimitRef.current.toString());
       url.searchParams.set('page', nextPage.toString());
       
       const response = await fetch(url.toString());
+      if (!response.ok) throw new Error(`Failed to fetch: ${response.status}`);
+      
       const data = await response.json();
       
-      if (response.ok && data.properties && data.properties.length > 0) {
+      if (!isMountedRef.current) {
+        isLoadingRef.current = false;
+        return;
+      }
+      
+      if (data.properties && Array.isArray(data.properties) && data.properties.length > 0) {
         const transformed = data.properties.map((property: any) => ({
           ...property,
           images: Array.isArray(property.images) ? property.images : [],
         }));
+        
+        // Single batched state update
         setProperties(prev => {
           const newProperties = [...prev, ...transformed];
-          const newTotal = data.total || total;
+          propertiesLengthRef.current = newProperties.length;
+          const newTotal = data.total || newProperties.length;
+          const stillHasMore = newProperties.length < newTotal;
+          
+          // Update all related state and refs together
+          hasMoreRef.current = stillHasMore;
           setTotal(newTotal);
-          setHasMore(newProperties.length < newTotal);
+          setHasMore(stillHasMore);
+          setCurrentPage(nextPage);
+          
           return newProperties;
         });
-        setCurrentPage(nextPage);
       } else {
+        // No more properties
+        hasMoreRef.current = false;
         setHasMore(false);
       }
     } catch (error) {
       console.error('Error loading more properties:', error);
-      setHasMore(false);
+      if (isMountedRef.current) {
+        hasMoreRef.current = false;
+        setHasMore(false);
+      }
     } finally {
-      setLoadingMore(false);
       isLoadingRef.current = false;
+      if (isMountedRef.current) {
+        setLoadingMore(false);
+      }
     }
-  }, [fetchUrl, loadMoreLimit, currentPage, hasMore, loadingMore, total]);
+  }, []); // Empty deps - all values from refs or functional updates
 
-  // Store the latest loadMoreProperties in a ref to avoid recreating observer
+  // Detect iOS to apply more conservative settings
+  const isIOSRef = useRef(false);
   useEffect(() => {
-    loadMoreCallbackRef.current = loadMoreProperties;
-  }, [loadMoreProperties]);
+    if (typeof window !== 'undefined') {
+      isIOSRef.current = /iPad|iPhone|iPod/.test(navigator.userAgent) || 
+        (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+    }
+  }, []);
 
-  // Intersection Observer for lazy loading
+  // Set up Intersection Observer ONLY ONCE after initial load completes
+  // This observer will NOT be recreated when properties change (critical for iOS)
   useEffect(() => {
-    if (!hasMore || properties.length === 0) return;
+    // Only set up observer once, after initial load is complete and we have properties
+    if (observerSetupRef.current || loading || properties.length === 0) {
+      return;
+    }
+
+    // Don't set up if no more data
+    if (!hasMoreRef.current) {
+      return;
+    }
 
     const currentRef = loadMoreRef.current;
-    if (!currentRef) return;
+    if (!currentRef || !isMountedRef.current) {
+      return;
+    }
 
-    let observer: IntersectionObserver | null = null;
+    // Longer delay for iOS to ensure everything is stable
+    const delay = isIOSRef.current ? 2000 : 1000;
+    const setupTimeout = setTimeout(() => {
+      // Double-check conditions after delay
+      if (!currentRef || !isMountedRef.current || observerSetupRef.current || !hasMoreRef.current) {
+        return;
+      }
 
-    // Small delay to ensure DOM is ready
-    const timeoutId = setTimeout(() => {
-      if (!currentRef || !hasMore) return;
+      // Very aggressive debouncing for iOS
+      let lastTriggerTime = 0;
+      const MIN_INTERVAL_MS = isIOSRef.current ? 5000 : 3000; // 5 seconds on iOS, 3 seconds elsewhere
+      let isProcessing = false;
+      let triggerCount = 0;
+      const MAX_TRIGGERS = 10; // Safety limit to prevent infinite loops
 
-      observer = new IntersectionObserver(
+      observerRef.current = new IntersectionObserver(
         (entries) => {
+          // Early returns - use refs to avoid state reads
+          if (!isMountedRef.current || isProcessing) return;
+          if (triggerCount >= MAX_TRIGGERS) {
+            console.warn('Max triggers reached, disabling observer');
+            if (observerRef.current) {
+              try {
+                observerRef.current.disconnect();
+              } catch (error) {
+                // Ignore
+              }
+            }
+            return;
+          }
+
           const [entry] = entries;
-          if (entry.isIntersecting && hasMore && !loadingMore && !isLoadingRef.current) {
-            // Use the ref to get the latest callback
-            if (loadMoreCallbackRef.current) {
-              loadMoreCallbackRef.current();
+          if (!entry.isIntersecting) return;
+
+          const now = Date.now();
+          
+          // Very strict debounce for iOS
+          if (now - lastTriggerTime < MIN_INTERVAL_MS) {
+            return;
+          }
+
+          // Final check using refs only (no state reads)
+          if (!hasMoreRef.current || isLoadingRef.current || isProcessing) {
+            return;
+          }
+
+          // Increment trigger count and set flags
+          triggerCount++;
+          isProcessing = true;
+          lastTriggerTime = now;
+
+          // Immediately disconnect to prevent any further triggers
+          if (observerRef.current) {
+            try {
+              observerRef.current.disconnect();
+            } catch (error) {
+              // Ignore errors
             }
           }
+
+          // Use requestAnimationFrame to batch state updates (iOS optimization)
+          requestAnimationFrame(() => {
+            // Load more properties
+            loadMoreProperties()
+              .then(() => {
+                // Wait before re-enabling (longer wait on iOS)
+                const reEnableDelay = isIOSRef.current ? 4000 : 2500;
+                setTimeout(() => {
+                  isProcessing = false;
+                  
+                  // Only re-enable if all conditions are met
+                  if (
+                    isMountedRef.current && 
+                    hasMoreRef.current && 
+                    currentRef && 
+                    observerRef.current &&
+                    triggerCount < MAX_TRIGGERS
+                  ) {
+                    try {
+                      observerRef.current.observe(currentRef);
+                    } catch (error) {
+                      console.error('Error re-observing:', error);
+                      isProcessing = false;
+                    }
+                  } else {
+                    // Cleanup if conditions not met
+                    if (observerRef.current) {
+                      try {
+                        observerRef.current.disconnect();
+                      } catch (error) {
+                        // Ignore
+                      }
+                    }
+                  }
+                }, reEnableDelay);
+              })
+              .catch((error) => {
+                console.error('Error in loadMoreProperties:', error);
+                isProcessing = false;
+                
+                // Disable on error to prevent loops
+                if (isMountedRef.current) {
+                  hasMoreRef.current = false;
+                  setHasMore(false);
+                }
+                
+                // Cleanup observer on error
+                if (observerRef.current) {
+                  try {
+                    observerRef.current.disconnect();
+                  } catch (error) {
+                    // Ignore
+                  }
+                }
+              });
+          });
         },
         {
-          rootMargin: '200px', // Start loading 200px before the element comes into view (reduced for mobile)
-          threshold: 0.01,
+          // Very conservative settings for iOS
+          rootMargin: isIOSRef.current ? '800px' : '500px', // Load much earlier on iOS
+          threshold: 0.01, // Very low threshold
         }
       );
 
-      observer.observe(currentRef);
-    }, 150);
+      try {
+        observerRef.current.observe(currentRef);
+        observerSetupRef.current = true; // Mark as set up - will not be set up again
+      } catch (error) {
+        console.error('Error setting up IntersectionObserver:', error);
+        observerSetupRef.current = false; // Allow retry on error
+      }
+    }, delay);
 
     return () => {
-      clearTimeout(timeoutId);
-      if (observer) {
-        observer.disconnect();
-      }
+      clearTimeout(setupTimeout);
+      // Don't disconnect observer in cleanup - let it persist until unmount or hasMore becomes false
     };
-  }, [hasMore, loadingMore, properties.length]);
+  }, [loading, loadMoreProperties]); // Only depend on loading (changes once) and stable callback
+
+  // Cleanup observer when hasMore becomes false
+  useEffect(() => {
+    if (!hasMore && observerRef.current) {
+      try {
+        observerRef.current.disconnect();
+        observerRef.current = null;
+        observerSetupRef.current = false;
+      } catch (error) {
+        // Ignore cleanup errors
+      }
+    }
+  }, [hasMore]);
 
   if (loading && properties.length === 0) {
     return (
@@ -313,4 +540,3 @@ const LazyPropertyCarousel: React.FC<LazyPropertyCarouselProps> = ({
 };
 
 export default LazyPropertyCarousel;
-
