@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import {
   Box,
   Button,
@@ -11,54 +11,88 @@ import {
   Text,
   Alert,
   AlertIcon,
+  Link,
 } from '@chakra-ui/react';
+import ReCAPTCHA from 'react-google-recaptcha';
 import { useAuth } from '@/contexts/AuthContext';
 import { useRouter } from 'next/router';
 import DefaultLayout from '@/features/Layout/DefaultLayout';
 
-const LoginPage = () => {
+const RegisterPage = () => {
+  const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const { login, isAdmin } = useAuth();
+  const [recaptchaValue, setRecaptchaValue] = useState<string | null>(null);
+  const recaptchaRef = useRef<ReCAPTCHA>(null);
+  const { register } = useAuth();
   const router = useRouter();
+
+  // Get reCAPTCHA site key from environment variable
+  const recaptchaSiteKey = process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY || '';
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
+
+    // Validate captcha
+    if (!recaptchaValue) {
+      setError('Please complete the reCAPTCHA verification.');
+      return;
+    }
+
+    // Validation
+    if (!username || !email || !password || !confirmPassword) {
+      setError('All fields are required');
+      if (recaptchaRef.current) {
+        recaptchaRef.current.reset();
+        setRecaptchaValue(null);
+      }
+      return;
+    }
+
+    if (username.length < 3) {
+      setError('Username must be at least 3 characters long');
+      if (recaptchaRef.current) {
+        recaptchaRef.current.reset();
+        setRecaptchaValue(null);
+      }
+      return;
+    }
+
+    if (password.length < 6) {
+      setError('Password must be at least 6 characters long');
+      if (recaptchaRef.current) {
+        recaptchaRef.current.reset();
+        setRecaptchaValue(null);
+      }
+      return;
+    }
+
+    if (password !== confirmPassword) {
+      setError('Passwords do not match');
+      if (recaptchaRef.current) {
+        recaptchaRef.current.reset();
+        setRecaptchaValue(null);
+      }
+      return;
+    }
+
     setIsLoading(true);
 
-    // Get user type from login response
-    try {
-      const response = await fetch('/api/user-login', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ email, password }),
-      });
-
-      const data = await response.json();
-
-      if (response.ok && data.success) {
-        // Call login to update context
-        await login(email, password);
-        
-        // Redirect based on user type
-        const returnUrl = router.query.returnUrl as string;
-        if (returnUrl) {
-          router.push(returnUrl);
-        } else if (data.isAdmin || data.user.userType === 'admin') {
-          router.push('/cpanel');
-        } else {
-          router.push('/');
-        }
-      } else {
-        setError(data.error || 'Invalid email or password. Please try again.');
+    const result = await register(username, email, password);
+    
+    if (result.success) {
+      router.push('/');
+    } else {
+      setError(result.error || 'Registration failed. Please try again.');
+      // Reset captcha on error
+      if (recaptchaRef.current) {
+        recaptchaRef.current.reset();
+        setRecaptchaValue(null);
       }
-    } catch (error) {
-      setError('An error occurred. Please try again.');
     }
     
     setIsLoading(false);
@@ -66,9 +100,9 @@ const LoginPage = () => {
 
   return (
     <DefaultLayout 
-      title="Login - Sowparnika Properties"
-      description="Login to your Sowparnika Properties account to access favorites, save properties, and get personalized recommendations."
-      keywords="login, user account, property account, real estate login"
+      title="Register - Create Account | Sowparnika Properties"
+      description="Create a free account with Sowparnika Properties to save favorite properties, get personalized recommendations, and access exclusive features."
+      keywords="register, create account, property account, real estate registration"
       noindex={true}
     >
       <Box bg="white" minH="100vh" display="flex" alignItems="center" justifyContent="center" py={16}>
@@ -105,10 +139,10 @@ const LoginPage = () => {
                   textTransform="uppercase"
                   mb={2}
                 >
-                  Login
+                  Register
                 </Heading>
                 <Text color="gray.900" fontSize="sm" letterSpacing="0.1em">
-                  Sign in to your account
+                  Create your account
                 </Text>
               </Box>
 
@@ -121,6 +155,27 @@ const LoginPage = () => {
 
               <form onSubmit={handleSubmit} style={{ width: '100%' }}>
                 <VStack spacing={6}>
+                  <FormControl isRequired>
+                    <FormLabel color="gray.900" fontWeight="600" fontSize="sm" letterSpacing="0.05em" textTransform="uppercase">
+                      Username
+                    </FormLabel>
+                    <Input
+                      type="text"
+                      value={username}
+                      onChange={(e) => setUsername(e.target.value)}
+                      placeholder="Choose a username"
+                      bg="white"
+                      borderColor="gray.300"
+                      color="gray.900"
+                      _placeholder={{ color: 'gray.400' }}
+                      _focus={{
+                        borderColor: 'gray.900',
+                        boxShadow: '0 0 0 1px gray.900',
+                      }}
+                      borderRadius="0"
+                    />
+                  </FormControl>
+
                   <FormControl isRequired>
                     <FormLabel color="gray.900" fontWeight="600" fontSize="sm" letterSpacing="0.05em" textTransform="uppercase">
                       Email
@@ -150,7 +205,7 @@ const LoginPage = () => {
                       type="password"
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
-                      placeholder="Enter password"
+                      placeholder="Enter password (min 6 characters)"
                       bg="white"
                       borderColor="gray.300"
                       color="gray.900"
@@ -163,11 +218,45 @@ const LoginPage = () => {
                     />
                   </FormControl>
 
+                  <FormControl isRequired>
+                    <FormLabel color="gray.900" fontWeight="600" fontSize="sm" letterSpacing="0.05em" textTransform="uppercase">
+                      Confirm Password
+                    </FormLabel>
+                    <Input
+                      type="password"
+                      value={confirmPassword}
+                      onChange={(e) => setConfirmPassword(e.target.value)}
+                      placeholder="Confirm your password"
+                      bg="white"
+                      borderColor="gray.300"
+                      color="gray.900"
+                      _placeholder={{ color: 'gray.400' }}
+                      _focus={{
+                        borderColor: 'gray.900',
+                        boxShadow: '0 0 0 1px gray.900',
+                      }}
+                      borderRadius="0"
+                    />
+                  </FormControl>
+
+                  {/* reCAPTCHA */}
+                  {recaptchaSiteKey && (
+                    <Box display="flex" justifyContent="center" width="100%">
+                      <ReCAPTCHA
+                        ref={recaptchaRef}
+                        sitekey={recaptchaSiteKey}
+                        onChange={(value) => setRecaptchaValue(value)}
+                        onExpired={() => setRecaptchaValue(null)}
+                        onError={() => setRecaptchaValue(null)}
+                      />
+                    </Box>
+                  )}
+
                   <Button
                     type="submit"
                     width="full"
                     isLoading={isLoading}
-                    loadingText="Logging in..."
+                    loadingText="Registering..."
                     bg="gray.900"
                     color="white"
                     borderRadius="0"
@@ -178,22 +267,23 @@ const LoginPage = () => {
                       bg: 'gray.800',
                     }}
                     py={6}
+                    isDisabled={!recaptchaValue && !!recaptchaSiteKey}
                   >
-                    Login
+                    Register
                   </Button>
 
                   <Box textAlign="center" pt={2}>
                     <Text color="gray.600" fontSize="sm">
-                      Don&apos;t have an account?{' '}
+                      Already have an account?{' '}
                       <Text
                         as="a"
-                        href="/register"
+                        href="/login"
                         color="gray.900"
                         fontWeight="600"
                         textDecoration="underline"
                         _hover={{ color: 'gray.700' }}
                       >
-                        Register here
+                        Login here
                       </Text>
                     </Text>
                   </Box>
@@ -207,5 +297,5 @@ const LoginPage = () => {
   );
 };
 
-export default LoginPage;
+export default RegisterPage;
 

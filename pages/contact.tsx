@@ -8,8 +8,9 @@ import React from 'react';
 const Contact = () => {
   return (
     <DefaultLayout
-      title="Contact Us - Sowparnika Properties"
-      description="Contact Sowparnika Properties in Kakkanad, Kochi. Get in touch with our real estate experts for property inquiries, consultations, and more."
+      title="Contact Us - Sowparnika Properties | Real Estate in Kakkanad, Kochi"
+      description="Contact Sowparnika Properties in Kakkanad, Kochi. Get in touch with our real estate experts for property inquiries, consultations, and more. Call us at +91 9446211417 or visit our office."
+      keywords="contact Sowparnika Properties, real estate Kakkanad, property consultation Kochi, real estate agents Kakkanad, property inquiry"
     >
       <Box
         backgroundColor="#f7f8f9"

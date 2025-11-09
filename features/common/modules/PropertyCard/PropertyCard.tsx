@@ -1,16 +1,24 @@
 import React from 'react';
 import { usePropertyFormat } from '@/features/common/Hooks/usePropertyFormat';
-import { Badge, Box, Flex, HStack, Text } from '@chakra-ui/react';
+import { Badge, Box, Flex, HStack, Text, IconButton } from '@chakra-ui/react';
 import { TbBed, TbBath, TbRuler } from 'react-icons/tb';
+import { FiHeart } from 'react-icons/fi';
 import { Swiper, SwiperSlide } from 'swiper/react';
 import { Navigation, Pagination } from 'swiper';
 import Link from 'next/link';
+import { useFavorites } from '@/contexts/FavoritesContext';
+import { useAuth } from '@/contexts/AuthContext';
+import { useToast } from '@chakra-ui/react';
+import { FiShare2 } from 'react-icons/fi';
 
 import 'swiper/css';
 import 'swiper/css/navigation';
 import 'swiper/css/pagination';
 
 const PropertyCard = (property: Object) => {
+  const { isAuthenticated, isAdmin } = useAuth();
+  const { isFavorite, toggleFavorite } = useFavorites();
+  const toast = useToast();
   const {
     address,
     coverPhoto,
@@ -25,6 +33,92 @@ const PropertyCard = (property: Object) => {
     externalID,
     photos,
   } = usePropertyFormat(property);
+
+  const propertyId = (property as any).id || externalID;
+  const favorite = isFavorite(propertyId);
+  const isFeatured = (property as any).featured === true;
+
+  const handleFavoriteClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (isAuthenticated) {
+      toggleFavorite(propertyId);
+    } else {
+      // Redirect to login if not authenticated
+      window.location.href = '/login';
+    }
+  };
+
+  const handleShareClick = async (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    const propertyUrl = `${window.location.origin}/properties/${propertyId}`;
+    const shareText = `Check out this property: ${title} - ${propertyUrl}`;
+    
+    // Try to use Web Share API if available (mobile)
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: title,
+          text: `Check out this property: ${title}`,
+          url: propertyUrl,
+        });
+        toast({
+          title: 'Shared',
+          description: 'Property shared successfully',
+          status: 'success',
+          duration: 2000,
+        });
+      } catch (error: any) {
+        // User cancelled or error occurred
+        if (error.name !== 'AbortError') {
+          // Fall back to clipboard
+          await copyToClipboard(propertyUrl);
+        }
+      }
+    } else {
+      // Fall back to clipboard
+      await copyToClipboard(propertyUrl);
+    }
+  };
+
+  const copyToClipboard = async (text: string) => {
+    try {
+      await navigator.clipboard.writeText(text);
+      toast({
+        title: 'Link copied',
+        description: 'Property link copied to clipboard',
+        status: 'success',
+        duration: 2000,
+      });
+    } catch (error) {
+      // Fallback for older browsers
+      const textArea = document.createElement('textarea');
+      textArea.value = text;
+      textArea.style.position = 'fixed';
+      textArea.style.left = '-999999px';
+      document.body.appendChild(textArea);
+      textArea.select();
+      try {
+        document.execCommand('copy');
+        toast({
+          title: 'Link copied',
+          description: 'Property link copied to clipboard',
+          status: 'success',
+          duration: 2000,
+        });
+      } catch (err) {
+        toast({
+          title: 'Error',
+          description: 'Failed to copy link',
+          status: 'error',
+          duration: 2000,
+        });
+      }
+      document.body.removeChild(textArea);
+    }
+  };
 
   // Get all images for swiper
   const allImages = photos && Array.isArray(photos) && photos.length > 0
@@ -157,10 +251,76 @@ const PropertyCard = (property: Object) => {
             top="1rem"
             left="1rem"
             zIndex={2}
+            display="flex"
+            flexDirection="column"
+            gap={2}
           >
+            {isFeatured && (
+              <Badge 
+                bg="warm.500" 
+                color="white" 
+                fontSize="xs" 
+                px={2} 
+                py={1} 
+                borderRadius="0"
+                fontWeight="700"
+                textTransform="uppercase"
+                letterSpacing="0.05em"
+                boxShadow="0 2px 8px rgba(245, 158, 11, 0.4)"
+              >
+                Featured
+              </Badge>
+            )}
             <Badge colorScheme="green" fontSize="sm" px={2} py={1} borderRadius="0">
               {purpose}
             </Badge>
+          </Box>
+
+          {/* Favorite and Share Buttons */}
+          <Box
+            position="absolute"
+            top="1rem"
+            right="1rem"
+            zIndex={2}
+            display="flex"
+            gap={2}
+          >
+            {/* Share Button (Admin only) */}
+            {isAdmin && (
+              <IconButton
+                aria-label="Share property"
+                icon={<FiShare2 />}
+                size="sm"
+                bg="white"
+                color="gray.700"
+                borderRadius="full"
+                _hover={{
+                  bg: 'gray.100',
+                  transform: 'scale(1.1)',
+                }}
+                onClick={handleShareClick}
+                transition="all 0.2s"
+                boxShadow="md"
+              />
+            )}
+            {/* Favorite Button */}
+            {isAuthenticated && (
+              <IconButton
+                aria-label={favorite ? 'Remove from favorites' : 'Add to favorites'}
+                icon={<FiHeart />}
+                size="sm"
+                bg={favorite ? 'red.500' : 'white'}
+                color={favorite ? 'white' : 'gray.700'}
+                borderRadius="full"
+                _hover={{
+                  bg: favorite ? 'red.600' : 'gray.100',
+                  transform: 'scale(1.1)',
+                }}
+                onClick={handleFavoriteClick}
+                transition="all 0.2s"
+                boxShadow="md"
+              />
+            )}
           </Box>
         </Box>
 

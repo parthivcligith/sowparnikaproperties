@@ -96,6 +96,7 @@ const Properties = () => {
       router.query.bhk || '',
       router.query.sellingType || '',
       router.query.status || 'active',
+      router.query.featured || '',
       router.query.minPrice || '',
       router.query.maxPrice || '',
       router.query.sortBy || 'created_at',
@@ -124,7 +125,7 @@ const Properties = () => {
     const urlPage = router.query.page ? parseInt(router.query.page as string) : 1;
     setCurrentPage(urlPage || 1);
     
-    const { search, bhk, minPrice, maxPrice, propertyType, city, status, sellingType, sortBy: urlSortBy, sortOrder: urlSortOrder } = router.query;
+    const { search, bhk, minPrice, maxPrice, propertyType, city, status, sellingType, featured, sortBy: urlSortBy, sortOrder: urlSortOrder } = router.query;
     
     // Debug logging
     if (process.env.NODE_ENV === 'development') {
@@ -177,6 +178,7 @@ const Properties = () => {
     if (process.env.NODE_ENV === 'development') {
       console.log('✅ URL params processed, filters set:', newFilters);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [router.isReady, router.query]);
 
   // Debounce search query
@@ -209,6 +211,8 @@ const Properties = () => {
     if (filters.city) params.append('city', filters.city);
     if (filters.bhk) params.append('bhk', filters.bhk);
     if (filters.status && filters.status !== 'active') params.append('status', filters.status);
+    // Preserve featured filter from URL if present
+    if (router.query.featured) params.append('featured', router.query.featured as string);
     if (filters.minPrice) params.append('minPrice', filters.minPrice);
     if (filters.maxPrice) params.append('maxPrice', filters.maxPrice);
     if (sortBy !== 'created_at') params.append('sortBy', sortBy);
@@ -223,6 +227,7 @@ const Properties = () => {
     if (router.query.city) currentParams.append('city', router.query.city as string);
     if (router.query.bhk) currentParams.append('bhk', router.query.bhk as string);
     if (router.query.status && router.query.status !== 'active') currentParams.append('status', router.query.status as string);
+    if (router.query.featured) currentParams.append('featured', router.query.featured as string);
     if (router.query.minPrice) currentParams.append('minPrice', router.query.minPrice as string);
     if (router.query.maxPrice) currentParams.append('maxPrice', router.query.maxPrice as string);
     if (router.query.sortBy && router.query.sortBy !== 'created_at') currentParams.append('sortBy', router.query.sortBy as string);
@@ -284,6 +289,10 @@ const Properties = () => {
       }
       if (currentFilters.status) {
         params.append('status', currentFilters.status);
+      }
+      // Add featured filter if present in URL
+      if (router.query.featured && typeof router.query.featured === 'string') {
+        params.append('featured', router.query.featured);
       }
       if (currentFilters.minPrice) {
         params.append('minPrice', currentFilters.minPrice);
@@ -368,6 +377,7 @@ const Properties = () => {
       prevFilterSignatureRef.current = filterSignature;
     }
     // Don't update ref if only page changed - this prevents infinite loops
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [debouncedSearchQuery, filters, sortBy, sortOrder, router.isReady, hasInitializedFromUrl, isUpdatingFromUrl]);
 
   // Get unique values for filters
@@ -415,8 +425,9 @@ const Properties = () => {
 
   return (
     <DefaultLayout
-      title="Properties"
-      description="Find your dream home with our real estate website. Browse through thousands of listings."
+      title="Properties for Sale & Rent in Kakkanad, Kochi | Browse Real Estate Listings"
+      description="Browse our extensive collection of properties for sale and rent in Kakkanad, Kochi. Find houses, villas, flats, plots, and commercial buildings. Filter by price, location, BHK, and more. Verified listings with detailed information."
+      keywords="properties Kakkanad, houses for sale Kochi, villas Kakkanad, flats for rent, plots Kakkanad, commercial buildings Kochi, property listings, real estate Kakkanad, Sowparnika Properties"
     >
       <Box backgroundColor="#f7f8f9" minH="100vh" py="3rem">
         <Container maxW="1400px">

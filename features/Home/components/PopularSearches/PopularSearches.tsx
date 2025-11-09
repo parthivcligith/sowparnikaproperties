@@ -21,17 +21,15 @@ const PopularSearches: React.FC = () => {
       // Map display names to database property types
       const categoryMap: Record<string, string> = {
         'Home': 'House',
-        'Land': 'Land',
+        'Plot/Land': 'Plot', // API will show both Plot and Land when Plot is selected
         'Villas': 'Villa',
-        'Flats': 'Flat',
-        'Warehouses': 'Warehouse',
-        'Commercial Buildings': 'Commercial Building',
       };
 
       const counts: Record<string, number> = {};
 
       for (const [displayName, dbPropertyType] of Object.entries(categoryMap)) {
         try {
+          // For Plot/Land, API will return both Plot and Land when propertyType=Plot is used
           const response = await fetch(`/api/get-properties?propertyType=${encodeURIComponent(dbPropertyType)}&status=active&limit=1`);
           const data = await response.json();
           counts[displayName] = data.total || 0;
@@ -57,10 +55,10 @@ const PopularSearches: React.FC = () => {
     },
     {
       id: '2',
-      name: 'Land',
+      name: 'Plot/Land',
       image: 'https://images.unsplash.com/photo-1500382017468-9049fed747ef?w=800&q=80',
-      listingCount: listingCounts['Land'] || 0,
-      propertyType: 'Land',
+      listingCount: listingCounts['Plot/Land'] || 0,
+      propertyType: 'Plot', // Using Plot, API will show both Plot and Land
     },
     {
       id: '3',
@@ -68,27 +66,6 @@ const PopularSearches: React.FC = () => {
       image: 'https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?w=800&q=80',
       listingCount: listingCounts['Villas'] || 0,
       propertyType: 'Villa',
-    },
-    {
-      id: '4',
-      name: 'Flats',
-      image: 'https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?w=800&q=80',
-      listingCount: listingCounts['Flats'] || 0,
-      propertyType: 'Flat',
-    },
-    {
-      id: '5',
-      name: 'Warehouses',
-      image: 'https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?w=800&q=80',
-      listingCount: listingCounts['Warehouses'] || 0,
-      propertyType: 'Warehouse',
-    },
-    {
-      id: '6',
-      name: 'Commercial Buildings',
-      image: 'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?w=800&q=80',
-      listingCount: listingCounts['Commercial Buildings'] || 0,
-      propertyType: 'Commercial Building',
     },
   ];
 
@@ -147,9 +124,9 @@ const PopularSearches: React.FC = () => {
         {/* Category Cards Grid */}
         <SimpleGrid columns={{ base: 1, sm: 2, lg: 3 }} spacing={6} mb={12}>
           {displayedCategories.map((category) => {
-            // Special handling: Land should show Plot, Land, and Commercial Land
-            // For Land category, use 'Land' as the filter (API will handle showing Plot, Land, Commercial Land)
-            const propertyTypeParam = category.name === 'Land' ? 'Land' : category.propertyType;
+            // Special handling: Plot/Land should show both Plot and Land
+            // Using 'Plot' as the propertyType, API will handle showing both Plot and Land
+            const propertyTypeParam = category.propertyType;
             
             return (
             <ChakraLink

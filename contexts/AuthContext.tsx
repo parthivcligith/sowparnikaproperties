@@ -3,10 +3,20 @@ import { useRouter } from 'next/router';
 import Cookies from 'js-cookie';
 import { supabase } from '@/lib/supabase';
 
+export interface User {
+  id: string;
+  username: string;
+  email: string;
+  userType: 'user' | 'admin';
+}
+
 interface AuthContextType {
   isAuthenticated: boolean;
   isLoading: boolean;
+  user: User | null;
+  isAdmin: boolean;
   login: (email: string, password: string) => Promise<boolean>;
+  register: (username: string, email: string, password: string) => Promise<{ success: boolean; error?: string }>;
   logout: () => void;
 }
 
@@ -17,6 +27,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
 }) => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [user, setUser] = useState<User | null>(null);
+  const [isAdmin, setIsAdmin] = useState(false);
   const router = useRouter();
 
   useEffect(() => {
@@ -31,48 +43,56 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     }
 
     try {
-      const session = Cookies.get('admin_session');
-      if (session) {
-        // If Supabase is configured, try to verify with Supabase (optional check)
-        if (process.env.NEXT_PUBLIC_SUPABASE_URL) {
-          try {
-            const { data: { user }, error } = await supabase.auth.getUser();
-            // If we get a user from Supabase, verify email matches
-            if (user && user.email === process.env.NEXT_PUBLIC_ADMIN_EMAIL) {
-              setIsAuthenticated(true);
-            } else if (error) {
-              // Supabase auth failed (session expired, etc.) but session cookie exists
-              // Allow access with simple session-based auth - don't remove the cookie
-              console.log('Supabase auth check failed, but session cookie exists. Allowing access.');
-              setIsAuthenticated(true);
-            } else {
-              // User exists in Supabase but email doesn't match - still allow if session cookie exists
-              // This handles cases where admin email might differ or Supabase user doesn't exist
-              console.log('Supabase user email mismatch, but session cookie exists. Allowing access.');
-              setIsAuthenticated(true);
-            }
-          } catch (supabaseError) {
-            // If Supabase check fails (network error, etc.) but session cookie exists, allow access
-            console.log('Supabase check error, but session cookie exists. Allowing access:', supabaseError);
-            setIsAuthenticated(true);
-          }
-        } else {
-          // Simple session check if Supabase is not configured
+      const userSession = Cookies.get('user_session');
+      if (userSession) {
+        try {
+          const userData = JSON.parse(userSession);
+          setUser(userData);
           setIsAuthenticated(true);
+          setIsAdmin(userData.userType === 'admin');
+        } catch (e) {
+          // Legacy admin session
+          const adminSession = Cookies.get('admin_session');
+          if (adminSession) {
+            const adminEmail = process.env.NEXT_PUBLIC_ADMIN_EMAIL || 'admin@example.com';
+            setUser({
+              id: 'admin',
+              username: 'Admin',
+              email: adminEmail,
+              userType: 'admin',
+            });
+            setIsAuthenticated(true);
+            setIsAdmin(true);
+          } else {
+            setIsAuthenticated(false);
+            setUser(null);
+            setIsAdmin(false);
+          }
         }
       } else {
-        setIsAuthenticated(false);
+        // Check for legacy admin session
+        const adminSession = Cookies.get('admin_session');
+        if (adminSession) {
+          const adminEmail = process.env.NEXT_PUBLIC_ADMIN_EMAIL || 'admin@example.com';
+          setUser({
+            id: 'admin',
+            username: 'Admin',
+            email: adminEmail,
+            userType: 'admin',
+          });
+          setIsAuthenticated(true);
+          setIsAdmin(true);
+        } else {
+          setIsAuthenticated(false);
+          setUser(null);
+          setIsAdmin(false);
+        }
       }
     } catch (error) {
       console.error('Auth check error:', error);
-      // On error, check if session cookie still exists
-      const session = Cookies.get('admin_session');
-      if (session) {
-        // If session exists, allow access even if check failed
-        setIsAuthenticated(true);
-      } else {
-        setIsAuthenticated(false);
-      }
+      setIsAuthenticated(false);
+      setUser(null);
+      setIsAdmin(false);
     } finally {
       setIsLoading(false);
     }
@@ -80,60 +100,85 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
 
   const login = async (email: string, password: string): Promise<boolean> => {
     try {
-      const adminEmail = process.env.NEXT_PUBLIC_ADMIN_EMAIL || 'admin@example.com';
-      const adminPassword = process.env.NEXT_PUBLIC_ADMIN_PASSWORD;
-      
-      // Check credentials first
-      if (email !== adminEmail || password !== adminPassword) {
-        console.log('Invalid credentials provided');
+      const response = await fetch('/api/user-login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email, password }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok && data.success) {
+        setUser(data.user);
+        setIsAuthenticated(true);
+        setIsAdmin(data.user.userType === 'admin');
+        
+        // Store user session in cookie
+        Cookies.set('user_session', JSON.stringify(data.user), { expires: 7 });
+        
+        // For admin, also set legacy admin_session for backward compatibility
+        if (data.isAdmin) {
+          Cookies.set('admin_session', 'authenticated', { expires: 7 });
+        }
+        
+        console.log('Login successful:', data.user.username);
+        return true;
+      } else {
+        console.error('Login failed:', data.error);
         return false;
       }
-
-      // Credentials match - proceed with authentication
-      // If Supabase is configured, try Supabase auth (optional)
-      if (process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
-        try {
-          const { data, error } = await supabase.auth.signInWithPassword({
-            email,
-            password,
-          });
-
-          if (!error && data.user) {
-            // Supabase auth successful
-            Cookies.set('admin_session', data.session?.access_token || 'authenticated', { expires: 7 });
-            setIsAuthenticated(true);
-            console.log('Login successful via Supabase');
-            return true;
-          } else {
-            // Supabase auth failed - this is OK, we'll use simple session
-            console.warn('Supabase auth failed (user may not exist in Supabase), using simple session:', error?.message);
-          }
-        } catch (supabaseError: any) {
-          // Supabase error - fall back to simple session
-          console.warn('Supabase auth error (this is OK if user doesn\'t exist in Supabase):', supabaseError?.message || supabaseError);
-        }
-      }
-      
-      // Simple session-based auth (works without Supabase or if Supabase auth fails)
-      // This allows login even if the user doesn't exist in Supabase Auth
-      Cookies.set('admin_session', 'authenticated', { expires: 7 });
-      setIsAuthenticated(true);
-      console.log('Login successful via simple session');
-      return true;
     } catch (error: any) {
       console.error('Login error:', error);
       return false;
     }
   };
 
+  const register = async (username: string, email: string, password: string): Promise<{ success: boolean; error?: string }> => {
+    try {
+      const response = await fetch('/api/register', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ username, email, password }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok && data.success) {
+        // Auto-login after registration
+        setUser(data.user);
+        setIsAuthenticated(true);
+        setIsAdmin(data.user.userType === 'admin');
+        
+        // Store user session in cookie
+        Cookies.set('user_session', JSON.stringify(data.user), { expires: 7 });
+        
+        console.log('Registration successful:', data.user.username);
+        return { success: true };
+      } else {
+        console.error('Registration failed:', data.error);
+        return { success: false, error: data.error || 'Registration failed' };
+      }
+    } catch (error: any) {
+      console.error('Registration error:', error);
+      return { success: false, error: error.message || 'Registration failed' };
+    }
+  };
+
   const logout = () => {
+    Cookies.remove('user_session');
     Cookies.remove('admin_session');
     setIsAuthenticated(false);
+    setUser(null);
+    setIsAdmin(false);
     router.push('/');
   };
 
   return (
-    <AuthContext.Provider value={{ isAuthenticated, isLoading, login, logout }}>
+    <AuthContext.Provider value={{ isAuthenticated, isLoading, user, isAdmin, login, register, logout }}>
       {children}
     </AuthContext.Provider>
   );

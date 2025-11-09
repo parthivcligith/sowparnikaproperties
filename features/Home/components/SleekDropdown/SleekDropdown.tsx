@@ -1,5 +1,5 @@
-import React, { useState, useRef, useEffect } from 'react';
-import { Box, Text, Icon, Flex, Button } from '@chakra-ui/react';
+import React, { useState, useRef, useEffect, useLayoutEffect } from 'react';
+import { Box, Text, Icon, Flex, Button, Portal } from '@chakra-ui/react';
 import { ChevronDownIcon } from '@chakra-ui/icons';
 
 interface SleekDropdownProps {
@@ -21,23 +21,101 @@ const SleekDropdown: React.FC<SleekDropdownProps> = ({
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const buttonRef = useRef<HTMLDivElement>(null);
+  const [dropdownPosition, setDropdownPosition] = useState({ top: 0, left: 0, width: 0 });
+  
+  // Calculate dropdown position
+  const calculatePosition = () => {
+    if (buttonRef.current) {
+      const rect = buttonRef.current.getBoundingClientRect();
+      let left = rect.left;
+      const dropdownWidth = 300;
+      const dropdownHeight = 150; // Approximate height of dropdown
+      const gap = 8;
+      
+      // Adjust if dropdown would go off-screen on the right
+      if (left + dropdownWidth > window.innerWidth) {
+        left = window.innerWidth - dropdownWidth - 16;
+      }
+      
+      // Ensure dropdown doesn't go off-screen on the left
+      if (left < 16) {
+        left = 16;
+      }
+      
+      // Calculate top position - try below first
+      let top = rect.bottom + gap;
+      
+      // If dropdown would go off bottom of screen, position above button
+      if (top + dropdownHeight > window.innerHeight - 16) {
+        top = rect.top - dropdownHeight - gap;
+        // Ensure it doesn't go off top of screen
+        if (top < 16) {
+          top = 16;
+        }
+      }
+      
+      setDropdownPosition({
+        top: Math.max(8, top),
+        left: left,
+        width: rect.width,
+      });
+    }
+  };
+  
+  // Update position when dropdown opens
+  useLayoutEffect(() => {
+    if (isOpen) {
+      calculatePosition();
+    }
+  }, [isOpen]);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+      const target = event.target as Node;
+      if (
+        dropdownRef.current &&
+        !dropdownRef.current.contains(target) &&
+        buttonRef.current &&
+        !buttonRef.current.contains(target)
+      ) {
         setIsOpen(false);
       }
     };
 
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
+    const handleScroll = () => {
+      // Update dropdown position on scroll
+      if (isOpen) {
+        calculatePosition();
+      }
+    };
+
+    const handleResize = () => {
+      // Update dropdown position on resize
+      if (isOpen) {
+        calculatePosition();
+      }
+    };
+
+    if (isOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+      window.addEventListener('scroll', handleScroll, true);
+      window.addEventListener('resize', handleResize);
+      return () => {
+        document.removeEventListener('mousedown', handleClickOutside);
+        window.removeEventListener('scroll', handleScroll, true);
+        window.removeEventListener('resize', handleResize);
+      };
+    }
+  }, [isOpen]);
 
   const selectedOption = options.find((opt) => opt.value === value);
 
   return (
-    <Box position="relative" maxW={maxW} w="full" ref={dropdownRef}>
+    <Box position="relative" maxW={maxW} w="full">
       <Box
+        ref={buttonRef as any}
+        // @ts-ignore - Chakra UI Box as button type issue
         as="button"
         type="button"
         w="full"
@@ -60,14 +138,24 @@ const SleekDropdown: React.FC<SleekDropdownProps> = ({
         _active={{
           transform: 'scale(0.98)',
         }}
-        onClick={() => setIsOpen(!isOpen)}
+        // @ts-ignore - Chakra UI Box as button onClick type issue
+        onClick={(e) => {
+          e.stopPropagation();
+          if (!isOpen) {
+            // Calculate position before opening
+            calculatePosition();
+          }
+          setIsOpen(!isOpen);
+        }}
         boxShadow="0 2px 8px rgba(0, 0, 0, 0.05)"
+        role="button"
+        tabIndex={0}
       >
         <Flex align="center" gap={2} flex={1}>
           <Text
-            fontSize="15px"
+            fontSize={{ base: '11px', md: '15px' }}
             fontWeight="500"
-            color={selectedOption ? 'gray.900' : 'gray.500'}
+            color={selectedOption && selectedOption.value !== '' ? 'gray.900' : 'gray.500'}
             noOfLines={1}
             fontFamily="'Playfair Display', serif"
             letterSpacing="0.01em"
@@ -99,26 +187,27 @@ const SleekDropdown: React.FC<SleekDropdownProps> = ({
             display={{ base: 'block', md: 'none' }}
             onClick={() => setIsOpen(false)}
           />
-          <Box
-            position={{ base: 'fixed', md: 'absolute' }}
-            top={{ base: 'auto', md: '100%' }}
-            bottom={{ base: '20px', md: 'auto' }}
-            left={{ base: '50%', md: 0 }}
-            right={{ base: 'auto', md: 0 }}
-            transform={{ base: 'translateX(-50%)', md: 'none' }}
-            mt={{ base: 0, md: 2 }}
-            bg="white"
-            border="1px solid rgba(0, 0, 0, 0.1)"
-            borderRadius="lg"
-            boxShadow="0 8px 32px rgba(0, 0, 0, 0.15)"
-            zIndex={9999}
-            overflow="hidden"
-            py={2}
-            px={2}
-            minW={{ base: '280px', md: '200px' }}
-            maxW={{ base: 'calc(100vw - 32px)', md: '300px' }}
-            w={{ base: 'auto', md: 'auto' }}
-          >
+          <Portal>
+            {dropdownPosition.top > 0 && (
+              <Box
+                ref={dropdownRef}
+                position="fixed"
+                top={`${dropdownPosition.top}px`}
+                left={{ base: '50%', md: `${dropdownPosition.left}px` }}
+                transform={{ base: 'translateX(-50%)', md: 'none' }}
+                bg="white"
+                border="1px solid rgba(0, 0, 0, 0.1)"
+                borderRadius="lg"
+                boxShadow="0 8px 32px rgba(0, 0, 0, 0.15)"
+                zIndex={9999}
+                overflow="hidden"
+                py={2}
+                px={2}
+                minW={{ base: '280px', md: '200px' }}
+                maxW={{ base: 'calc(100vw - 32px)', md: '300px' }}
+                w={{ base: 'auto', md: 'auto' }}
+                onClick={(e) => e.stopPropagation()}
+              >
           <Flex
             direction="row"
             wrap="wrap"
@@ -157,7 +246,9 @@ const SleekDropdown: React.FC<SleekDropdownProps> = ({
               </Button>
             ))}
           </Flex>
-          </Box>
+              </Box>
+            )}
+          </Portal>
         </>
       )}
     </Box>

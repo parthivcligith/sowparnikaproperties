@@ -1,6 +1,6 @@
-import React, { useState, useRef, useEffect } from 'react';
-import { Box, Text, Icon, Flex, Input, IconButton, HStack, VStack, Slider, SliderTrack, SliderFilledTrack, SliderThumb } from '@chakra-ui/react';
-import { FiDollarSign, FiX } from 'react-icons/fi';
+import React, { useState, useRef, useEffect, useCallback, useLayoutEffect } from 'react';
+import { Box, Text, Icon, Flex, Input, IconButton, HStack, VStack, Portal } from '@chakra-ui/react';
+import { FiX } from 'react-icons/fi';
 import { ChevronDownIcon } from '@chakra-ui/icons';
 
 interface PriceRangeSelectorProps {
@@ -9,77 +9,312 @@ interface PriceRangeSelectorProps {
   maxW?: string | object;
 }
 
+const MAX_PRICE = 10000000;
+const MIN_PRICE = 0;
+
 const PriceRangeSelector: React.FC<PriceRangeSelectorProps> = ({
   value,
   onChange,
   maxW = '180px',
 }) => {
   const [isOpen, setIsOpen] = useState(false);
-  const [minPrice, setMinPrice] = useState('');
-  const [maxPrice, setMaxPrice] = useState('');
-  const [sliderValue, setSliderValue] = useState([0, 10000000]);
+  const [minPriceInput, setMinPriceInput] = useState(''); // Raw input value (no formatting)
+  const [maxPriceInput, setMaxPriceInput] = useState(''); // Raw input value (no formatting)
+  const [sliderMin, setSliderMin] = useState(MIN_PRICE);
+  const [sliderMax, setSliderMax] = useState(MAX_PRICE);
+  const [isDraggingMin, setIsDraggingMin] = useState(false);
+  const [isDraggingMax, setIsDraggingMax] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const sliderRef = useRef<HTMLDivElement>(null);
+  const buttonRef = useRef<HTMLDivElement>(null);
+  const [dropdownPosition, setDropdownPosition] = useState({ top: 0, left: 0, width: 0 });
+  
+  // Calculate dropdown position
+  const calculatePosition = useCallback(() => {
+    if (buttonRef.current) {
+      const rect = buttonRef.current.getBoundingClientRect();
+      let left = rect.left;
+      const dropdownWidth = 420;
+      const dropdownHeight = 250; // Approximate height of dropdown
+      const gap = 8;
+      
+      // Adjust if dropdown would go off-screen on the right
+      if (left + dropdownWidth > window.innerWidth) {
+        left = window.innerWidth - dropdownWidth - 16;
+      }
+      
+      // Ensure dropdown doesn't go off-screen on the left
+      if (left < 16) {
+        left = 16;
+      }
+      
+      // Calculate top position - try below first
+      let top = rect.bottom + gap;
+      
+      // If dropdown would go off bottom of screen, position above button
+      if (top + dropdownHeight > window.innerHeight - 16) {
+        top = rect.top - dropdownHeight - gap;
+        // Ensure it doesn't go off top of screen
+        if (top < 16) {
+          top = 16;
+        }
+      }
+      
+      setDropdownPosition({
+        top: Math.max(8, top),
+        left: left,
+        width: rect.width,
+      });
+    }
+  }, []);
+  
+  // Update position when dropdown opens
+  useLayoutEffect(() => {
+    if (isOpen) {
+      calculatePosition();
+    }
+  }, [isOpen, calculatePosition]);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+      const target = event.target as Node;
+      if (
+        dropdownRef.current &&
+        !dropdownRef.current.contains(target) &&
+        buttonRef.current &&
+        !buttonRef.current.contains(target)
+      ) {
         setIsOpen(false);
       }
     };
 
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
+    const handleScroll = () => {
+      // Update dropdown position on scroll
+      if (isOpen) {
+        calculatePosition();
+      }
+    };
 
+    const handleResize = () => {
+      // Update dropdown position on resize
+      if (isOpen) {
+        calculatePosition();
+      }
+    };
+
+    if (isOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+      window.addEventListener('scroll', handleScroll, true);
+      window.addEventListener('resize', handleResize);
+      return () => {
+        document.removeEventListener('mousedown', handleClickOutside);
+        window.removeEventListener('scroll', handleScroll, true);
+        window.removeEventListener('resize', handleResize);
+      };
+    }
+  }, [isOpen]);
+
+  // Track if we're updating internally to avoid overwriting user input
+  const isInternalUpdateRef = useRef(false);
+  
   useEffect(() => {
+    if (isInternalUpdateRef.current) {
+      isInternalUpdateRef.current = false;
+      return;
+    }
+    
     if (value) {
       const [min, max] = value.split('-').map(Number);
-      if (!isNaN(min)) setMinPrice(min.toLocaleString());
-      if (!isNaN(max)) setMaxPrice(max.toLocaleString());
-      setSliderValue([min || 0, max || 10000000]);
+      const minVal = min || MIN_PRICE;
+      const maxVal = max || MAX_PRICE;
+      
+      setSliderMin(minVal);
+      setSliderMax(maxVal);
+      
+      if (minVal === MIN_PRICE) {
+        setMinPriceInput('');
+      } else {
+        setMinPriceInput(minVal.toString());
+      }
+      if (maxVal === MAX_PRICE) {
+        setMaxPriceInput('');
+      } else {
+        setMaxPriceInput(maxVal.toString());
+      }
+    } else {
+      setSliderMin(MIN_PRICE);
+      setSliderMax(MAX_PRICE);
+      setMinPriceInput('');
+      setMaxPriceInput('');
     }
   }, [value]);
 
+  const updatePrices = useCallback((min: number, max: number, updateInputs = true) => {
+    const newMin = Math.min(min, max);
+    const newMax = Math.max(min, max);
+    setSliderMin(newMin);
+    setSliderMax(newMax);
+    // Only update input values if explicitly requested (from slider, not from input fields)
+    if (updateInputs) {
+      if (newMin === MIN_PRICE) {
+        setMinPriceInput('');
+      } else {
+        setMinPriceInput(newMin.toString());
+      }
+      if (newMax === MAX_PRICE) {
+        setMaxPriceInput('');
+      } else {
+        setMaxPriceInput(newMax.toString());
+      }
+    }
+    isInternalUpdateRef.current = true;
+    onChange(`${newMin}-${newMax}`);
+  }, [onChange]);
 
-  const handleMinChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const val = e.target.value.replace(/,/g, '');
-    if (val === '' || /^\d+$/.test(val)) {
-      setMinPrice(val === '' ? '' : Number(val).toLocaleString());
-      const numVal = val === '' ? 0 : Number(val);
-      setSliderValue([numVal, sliderValue[1]]);
-      onChange(`${numVal}-${sliderValue[1]}`);
+  const handleMinInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const val = e.target.value.replace(/[^0-9]/g, '');
+    setMinPriceInput(val); // Store raw value for input field immediately
+    
+    if (val === '') {
+      const newMin = MIN_PRICE;
+      setSliderMin(newMin);
+      isInternalUpdateRef.current = true;
+      onChange(`${newMin}-${sliderMax}`);
+    } else {
+      const numVal = Math.min(Number(val), sliderMax);
+      setSliderMin(numVal);
+      isInternalUpdateRef.current = true;
+      onChange(`${numVal}-${sliderMax}`);
     }
   };
 
-  const handleMaxChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const val = e.target.value.replace(/,/g, '');
-    if (val === '' || /^\d+$/.test(val)) {
-      setMaxPrice(val === '' ? '' : Number(val).toLocaleString());
-      const numVal = val === '' ? 10000000 : Number(val);
-      setSliderValue([sliderValue[0], numVal]);
-      onChange(`${sliderValue[0]}-${numVal}`);
+  const handleMaxInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const val = e.target.value.replace(/[^0-9]/g, '');
+    setMaxPriceInput(val); // Store raw value for input field immediately
+    
+    if (val === '') {
+      const newMax = MAX_PRICE;
+      setSliderMax(newMax);
+      isInternalUpdateRef.current = true;
+      onChange(`${sliderMin}-${newMax}`);
+    } else {
+      const numVal = Math.max(Number(val), sliderMin);
+      setSliderMax(numVal);
+      isInternalUpdateRef.current = true;
+      onChange(`${sliderMin}-${numVal}`);
     }
   };
 
   const clearMin = () => {
-    setMinPrice('');
-    setSliderValue([0, sliderValue[1]]);
-    onChange(`0-${sliderValue[1]}`);
+    setMinPriceInput('');
+    updatePrices(MIN_PRICE, sliderMax, true);
   };
 
   const clearMax = () => {
-    setMaxPrice('');
-    setSliderValue([sliderValue[0], 10000000]);
-    onChange(`${sliderValue[0]}-10000000`);
+    setMaxPriceInput('');
+    updatePrices(sliderMin, MAX_PRICE, true);
   };
 
-  const displayText = value && value !== '0-10000000' 
-    ? `${minPrice || 'No Min'} - ${maxPrice || 'No Max'}`
-    : 'Any price';
+  const getSliderPosition = (value: number) => {
+    return ((value - MIN_PRICE) / (MAX_PRICE - MIN_PRICE)) * 100;
+  };
+
+  const handleSliderClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    // Don't handle clicks if dragging
+    if (isDraggingMin || isDraggingMax) return;
+    // Don't handle clicks on handles
+    if ((e.target as HTMLElement).closest('[data-handle]')) return;
+    
+    if (!sliderRef.current) return;
+    const rect = sliderRef.current.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const percentage = Math.max(0, Math.min(100, (x / rect.width) * 100));
+    const clickedValue = Math.round((percentage / 100) * (MAX_PRICE - MIN_PRICE) + MIN_PRICE);
+    
+    const minDistance = Math.abs(clickedValue - sliderMin);
+    const maxDistance = Math.abs(clickedValue - sliderMax);
+    
+    if (minDistance < maxDistance) {
+      const newMin = Math.min(clickedValue, sliderMax - 100000);
+      updatePrices(newMin, sliderMax, true);
+    } else {
+      const newMax = Math.max(clickedValue, sliderMin + 100000);
+      updatePrices(sliderMin, newMax, true);
+    }
+  };
+
+  const handleMinDragStart = (clientX: number) => {
+    if (!sliderRef.current) return;
+    setIsDraggingMin(true);
+    
+    const handleMove = (moveEvent: MouseEvent | TouchEvent) => {
+      if (!sliderRef.current) return;
+      const rect = sliderRef.current.getBoundingClientRect();
+      const x = 'touches' in moveEvent ? moveEvent.touches[0].clientX - rect.left : moveEvent.clientX - rect.left;
+      const percentage = Math.max(0, Math.min(100, (x / rect.width) * 100));
+      const newValue = Math.round((percentage / 100) * (MAX_PRICE - MIN_PRICE) + MIN_PRICE);
+      // Prevent min from exceeding max (ensure min is at least 100k less than max)
+      const newMin = Math.min(newValue, Math.max(MIN_PRICE, sliderMax - 100000));
+      updatePrices(newMin, sliderMax);
+    };
+    
+    const handleEnd = () => {
+      setIsDraggingMin(false);
+      document.removeEventListener('mousemove', handleMove as EventListener);
+      document.removeEventListener('mouseup', handleEnd);
+      document.removeEventListener('touchmove', handleMove as EventListener);
+      document.removeEventListener('touchend', handleEnd);
+    };
+    
+    document.addEventListener('mousemove', handleMove as EventListener);
+    document.addEventListener('mouseup', handleEnd);
+    document.addEventListener('touchmove', handleMove as EventListener, { passive: false });
+    document.addEventListener('touchend', handleEnd);
+  };
+
+  const handleMaxDragStart = (clientX: number) => {
+    if (!sliderRef.current) return;
+    setIsDraggingMax(true);
+    
+    const handleMove = (moveEvent: MouseEvent | TouchEvent) => {
+      if (!sliderRef.current) return;
+      const rect = sliderRef.current.getBoundingClientRect();
+      const x = 'touches' in moveEvent ? moveEvent.touches[0].clientX - rect.left : moveEvent.clientX - rect.left;
+      const percentage = Math.max(0, Math.min(100, (x / rect.width) * 100));
+      const newValue = Math.round((percentage / 100) * (MAX_PRICE - MIN_PRICE) + MIN_PRICE);
+      // Prevent max from going below min (ensure max is at least 100k more than min)
+      const newMax = Math.max(newValue, Math.min(MAX_PRICE, sliderMin + 100000));
+      updatePrices(sliderMin, newMax, true); // Update inputs when dragging slider
+    };
+    
+    const handleEnd = () => {
+      setIsDraggingMax(false);
+      document.removeEventListener('mousemove', handleMove as EventListener);
+      document.removeEventListener('mouseup', handleEnd);
+      document.removeEventListener('touchmove', handleMove as EventListener);
+      document.removeEventListener('touchend', handleEnd);
+    };
+    
+    document.addEventListener('mousemove', handleMove as EventListener);
+    document.addEventListener('mouseup', handleEnd);
+    document.addEventListener('touchmove', handleMove as EventListener, { passive: false });
+    document.addEventListener('touchend', handleEnd);
+  };
+
+  const getDisplayText = () => {
+    if (!value || value === `${MIN_PRICE}-${MAX_PRICE}`) {
+      return 'Any price';
+    }
+    const minText = sliderMin !== MIN_PRICE ? `₹ ${sliderMin.toLocaleString()}` : 'No Min';
+    const maxText = sliderMax !== MAX_PRICE ? `₹ ${sliderMax.toLocaleString()}` : 'No Max';
+    return `${minText} - ${maxText}`;
+  };
 
   return (
-    <Box position="relative" maxW={maxW} w="full" ref={dropdownRef}>
+    <Box position="relative" maxW={maxW} w="full">
       <Box
+        ref={buttonRef as any}
+        // @ts-ignore - Chakra UI Box as button type issue
         as="button"
         type="button"
         w="full"
@@ -102,19 +337,29 @@ const PriceRangeSelector: React.FC<PriceRangeSelectorProps> = ({
         _active={{
           transform: 'scale(0.98)',
         }}
-        onClick={() => setIsOpen(!isOpen)}
+        // @ts-ignore - Chakra UI Box as button onClick type issue
+        onClick={(e) => {
+          e.stopPropagation();
+          if (!isOpen) {
+            // Calculate position before opening
+            calculatePosition();
+          }
+          setIsOpen(!isOpen);
+        }}
         boxShadow="0 2px 8px rgba(0, 0, 0, 0.05)"
+        role="button"
+        tabIndex={0}
       >
         <Flex align="center" gap={2} flex={1}>
           <Text
-            fontSize={{ base: '12px', md: '15px' }}
+            fontSize={{ base: '11px', md: '15px' }}
             fontWeight="500"
-            color={value && value !== '0-10000000' ? 'gray.900' : 'gray.500'}
+            color={value && value !== `${MIN_PRICE}-${MAX_PRICE}` ? 'gray.900' : 'gray.500'}
             noOfLines={1}
             fontFamily="'Playfair Display', serif"
             letterSpacing="0.01em"
           >
-            {displayText}
+            {getDisplayText()}
           </Text>
         </Flex>
         <Icon
@@ -141,143 +386,221 @@ const PriceRangeSelector: React.FC<PriceRangeSelectorProps> = ({
             display={{ base: 'block', md: 'none' }}
             onClick={() => setIsOpen(false)}
           />
-          <Box
-            position={{ base: 'fixed', md: 'absolute' }}
-            top={{ base: 'auto', md: '100%' }}
-            bottom={{ base: '20px', md: 'auto' }}
-            left={{ base: '50%', md: 0 }}
-            right={{ base: 'auto', md: 0 }}
-            transform={{ base: 'translateX(-50%)', md: 'none' }}
-            mt={{ base: 0, md: 2 }}
-            bg="white"
-            border="1px solid rgba(0, 0, 0, 0.1)"
-            borderRadius="lg"
-            boxShadow="0 8px 32px rgba(0, 0, 0, 0.15)"
-            zIndex={9999}
-            p={4}
-            minW={{ base: '280px', md: '320px' }}
-            maxW={{ base: 'calc(100vw - 32px)', md: '400px' }}
-            w={{ base: 'auto', md: 'auto' }}
-          >
-          <VStack spacing={4} align="stretch">
-            {/* Min/Max Inputs */}
-            <HStack spacing={3}>
-              <Box flex={1}>
-                <Text fontSize="xs" color="gray.600" mb={1} fontWeight="500">
-                  Min Price
-                </Text>
-                <HStack spacing={2}>
-                  <Text fontSize="sm" color="gray.700">₹</Text>
+          <Portal>
+            {dropdownPosition.top > 0 && (
+              <Box
+                ref={dropdownRef}
+                position="fixed"
+                top={`${dropdownPosition.top}px`}
+                left={{ base: '50%', md: `${dropdownPosition.left}px` }}
+                transform={{ base: 'translateX(-50%)', md: 'none' }}
+                bg="white"
+                border="1px solid rgba(0, 0, 0, 0.1)"
+                borderRadius="lg"
+                boxShadow="0 8px 32px rgba(0, 0, 0, 0.15)"
+                zIndex={9999}
+                p={4}
+                minW={{ base: '280px', md: '380px' }}
+                maxW={{ base: 'calc(100vw - 32px)', md: '420px' }}
+                w={{ base: 'auto', md: 'auto' }}
+                onClick={(e) => e.stopPropagation()}
+              >
+            <VStack spacing={4} align="stretch">
+            {/* Range Slider */}
+            <Box>
+              <Box
+                ref={sliderRef}
+                position="relative"
+                h="8px"
+                bg="gray.200"
+                borderRadius="full"
+                cursor="pointer"
+                onClick={handleSliderClick}
+                userSelect="none"
+                mt={2}
+              >
+                {/* Filled track between handles */}
+                <Box
+                  position="absolute"
+                  left={`${getSliderPosition(sliderMin)}%`}
+                  right={`${100 - getSliderPosition(sliderMax)}%`}
+                  h="100%"
+                  bg="gray.600"
+                  borderRadius="full"
+                  zIndex={1}
+                />
+                
+                {/* Min handle */}
+                <Box
+                  data-handle="min"
+                  position="absolute"
+                  left={`${getSliderPosition(sliderMin)}%`}
+                  transform="translateX(-50%)"
+                  w="20px"
+                  h="20px"
+                  bg="gray.900"
+                  borderRadius="full"
+                  border="2px solid white"
+                  boxShadow="0 2px 4px rgba(0,0,0,0.2)"
+                  cursor={isDraggingMin ? 'grabbing' : 'grab'}
+                  zIndex={2}
+                  top="50%"
+                  mt="-10px"
+                  onMouseDown={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    handleMinDragStart(e.clientX);
+                  }}
+                  onTouchStart={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    if (e.touches[0]) {
+                      handleMinDragStart(e.touches[0].clientX);
+                    }
+                  }}
+                  transition={isDraggingMin ? 'none' : 'all 0.1s'}
+                  _hover={{
+                    transform: 'translateX(-50%) scale(1.1)',
+                  }}
+                />
+                
+                {/* Max handle */}
+                <Box
+                  data-handle="max"
+                  position="absolute"
+                  left={`${getSliderPosition(sliderMax)}%`}
+                  transform="translateX(-50%)"
+                  w="20px"
+                  h="20px"
+                  bg="gray.900"
+                  borderRadius="full"
+                  border="2px solid white"
+                  boxShadow="0 2px 4px rgba(0,0,0,0.2)"
+                  cursor={isDraggingMax ? 'grabbing' : 'grab'}
+                  zIndex={2}
+                  top="50%"
+                  mt="-10px"
+                  onMouseDown={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    handleMaxDragStart(e.clientX);
+                  }}
+                  onTouchStart={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    if (e.touches[0]) {
+                      handleMaxDragStart(e.touches[0].clientX);
+                    }
+                  }}
+                  transition={isDraggingMax ? 'none' : 'all 0.1s'}
+                  _hover={{
+                    transform: 'translateX(-50%) scale(1.1)',
+                  }}
+                />
+              </Box>
+            </Box>
+
+            {/* Min/Max Input Fields */}
+            <HStack spacing={3} mt={2}>
+              <Box flex={1} position="relative">
+                <HStack
+                  spacing={2}
+                  border="1px solid"
+                  borderColor="gray.300"
+                  borderRadius="md"
+                  px={3}
+                  py={2}
+                  bg="white"
+                  _focusWithin={{
+                    borderColor: 'gray.900',
+                    boxShadow: '0 0 0 1px gray.900',
+                  }}
+                >
+                  <Text fontSize="sm" color="gray.700" fontWeight="500">
+                    ₹
+                  </Text>
                   <Input
                     placeholder="No Min"
-                    value={minPrice}
-                    onChange={handleMinChange}
-                    size="sm"
-                    borderRadius="md"
-                    border="1px solid"
-                    borderColor="gray.300"
-                    _focus={{ borderColor: 'blue.500', boxShadow: '0 0 0 1px blue.500' }}
+                    value={minPriceInput}
+                    onChange={handleMinInputChange}
+                    border="none"
+                    p={0}
+                    h="auto"
+                    fontSize="sm"
+                    color="gray.900"
+                    _focus={{ boxShadow: 'none' }}
+                    _placeholder={{ color: 'gray.400' }}
+                    type="text"
+                    inputMode="numeric"
                   />
-                  {minPrice && (
+                  {minPriceInput && (
                     <IconButton
                       aria-label="Clear min"
                       icon={<FiX />}
                       size="xs"
                       variant="ghost"
                       onClick={clearMin}
+                      minW="auto"
+                      w="16px"
+                      h="16px"
+                      color="gray.500"
+                      _hover={{ color: 'gray.900', bg: 'transparent' }}
                     />
                   )}
                 </HStack>
               </Box>
-              <Box flex={1}>
-                <Text fontSize="xs" color="gray.600" mb={1} fontWeight="500">
-                  Max Price
-                </Text>
-                <HStack spacing={2}>
-                  <Text fontSize="sm" color="gray.700">₹</Text>
+              <Box flex={1} position="relative">
+                <HStack
+                  spacing={2}
+                  border="1px solid"
+                  borderColor="gray.300"
+                  borderRadius="md"
+                  px={3}
+                  py={2}
+                  bg="white"
+                  _focusWithin={{
+                    borderColor: 'gray.900',
+                    boxShadow: '0 0 0 1px gray.900',
+                  }}
+                >
+                  <Text fontSize="sm" color="gray.700" fontWeight="500">
+                    ₹
+                  </Text>
                   <Input
                     placeholder="No Max"
-                    value={maxPrice}
-                    onChange={handleMaxChange}
-                    size="sm"
-                    borderRadius="md"
-                    border="1px solid"
-                    borderColor="gray.300"
-                    _focus={{ borderColor: 'blue.500', boxShadow: '0 0 0 1px blue.500' }}
+                    value={maxPriceInput}
+                    onChange={handleMaxInputChange}
+                    border="none"
+                    p={0}
+                    h="auto"
+                    fontSize="sm"
+                    color="gray.900"
+                    _focus={{ boxShadow: 'none' }}
+                    _placeholder={{ color: 'gray.400' }}
+                    type="text"
+                    inputMode="numeric"
                   />
-                  {maxPrice && (
+                  {maxPriceInput && (
                     <IconButton
                       aria-label="Clear max"
                       icon={<FiX />}
                       size="xs"
                       variant="ghost"
                       onClick={clearMax}
+                      minW="auto"
+                      w="16px"
+                      h="16px"
+                      color="gray.500"
+                      _hover={{ color: 'gray.900', bg: 'transparent' }}
                     />
                   )}
                 </HStack>
               </Box>
             </HStack>
-
-            {/* Slider */}
-            <Box>
-              <Text fontSize="xs" color="gray.600" mb={2} fontWeight="500">
-                Price Range
-              </Text>
-              <VStack spacing={4}>
-                {/* Min Price Slider */}
-                <Box w="full">
-                  <Text fontSize="xs" color="gray.500" mb={1}>
-                    Min: ₹ {sliderValue[0].toLocaleString()}
-                  </Text>
-                  <Slider
-                    value={sliderValue[0]}
-                    onChange={(val) => {
-                      const newValue = [val, sliderValue[1]];
-                      setSliderValue(newValue);
-                      setMinPrice(val.toLocaleString());
-                      onChange(`${val}-${sliderValue[1]}`);
-                    }}
-                    min={0}
-                    max={sliderValue[1]}
-                    step={100000}
-                    colorScheme="blue"
-                    aria-label="min-price"
-                  >
-                    <SliderTrack bg="gray.200" h={2} borderRadius="full">
-                      <SliderFilledTrack />
-                    </SliderTrack>
-                    <SliderThumb boxSize={5} bg="blue.500" border="2px solid white" boxShadow="0 2px 4px rgba(0,0,0,0.2)" />
-                  </Slider>
-                </Box>
-                {/* Max Price Slider */}
-                <Box w="full">
-                  <Text fontSize="xs" color="gray.500" mb={1}>
-                    Max: ₹ {sliderValue[1].toLocaleString()}
-                  </Text>
-                  <Slider
-                    value={sliderValue[1]}
-                    onChange={(val) => {
-                      const newValue = [sliderValue[0], val];
-                      setSliderValue(newValue);
-                      setMaxPrice(val.toLocaleString());
-                      onChange(`${sliderValue[0]}-${val}`);
-                    }}
-                    min={sliderValue[0]}
-                    max={10000000}
-                    step={100000}
-                    colorScheme="blue"
-                    aria-label="max-price"
-                  >
-                    <SliderTrack bg="gray.200" h={2} borderRadius="full">
-                      <SliderFilledTrack />
-                    </SliderTrack>
-                    <SliderThumb boxSize={5} bg="blue.500" border="2px solid white" boxShadow="0 2px 4px rgba(0,0,0,0.2)" />
-                  </Slider>
-                </Box>
-              </VStack>
-            </Box>
           </VStack>
-          </Box>
+              </Box>
+            )}
+          </Portal>
         </>
       )}
     </Box>

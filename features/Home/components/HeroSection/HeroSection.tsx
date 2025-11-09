@@ -252,9 +252,9 @@ const HeroSection = () => {
               <Box 
                 position="relative"
                 borderRight="1px solid rgba(0, 0, 0, 0.06)"
-                minW={{ base: '100px', md: '200px' }}
-                maxW={{ base: '120px', md: '200px' }}
-                w={{ base: '100px', md: 'auto' }}
+                minW={{ base: '80px', md: '200px' }}
+                maxW={{ base: '100px', md: '200px' }}
+                w={{ base: '80px', md: 'auto' }}
                 h="full"
                 flexShrink={0}
                 sx={{
@@ -277,9 +277,9 @@ const HeroSection = () => {
                         bg: 'rgba(0, 0, 0, 0.03) !important',
                       },
                       transition: 'all 0.2s ease',
-                      fontSize: { base: '12px', md: '15px' },
+                      fontSize: { base: '11px', md: '15px' },
                       '& > div': {
-                        fontSize: { base: '12px', md: '15px' },
+                        fontSize: { base: '11px', md: '15px' },
                       }
                     }
                   }
@@ -296,9 +296,9 @@ const HeroSection = () => {
               <Box 
                 position="relative"
                 borderRight="1px solid rgba(0, 0, 0, 0.06)"
-                minW={{ base: '90px', md: '160px' }}
-                maxW={{ base: '110px', md: '160px' }}
-                w={{ base: '90px', md: 'auto' }}
+                minW={{ base: '75px', md: '160px' }}
+                maxW={{ base: '90px', md: '160px' }}
+                w={{ base: '75px', md: 'auto' }}
                 h="full"
                 flexShrink={0}
                 sx={{
@@ -321,21 +321,21 @@ const HeroSection = () => {
                         bg: 'rgba(0, 0, 0, 0.03) !important',
                       },
                       transition: 'all 0.2s ease',
-                      fontSize: { base: '12px', md: '15px' },
+                      fontSize: { base: '11px', md: '15px' },
                       '& > div': {
-                        fontSize: { base: '12px', md: '15px' },
+                        fontSize: { base: '11px', md: '15px' },
                       }
                     }
                   }
                 }}
               >
                 <SleekDropdown
-                  placeholder="Any beds"
+                  placeholder="Any BHK"
                   value={bhk}
                   onChange={setBhk}
                   maxW="100%"
                   options={[
-                    { value: '', label: 'Any' },
+                    { value: '', label: 'Any BHK' },
                     { value: '1', label: '1+' },
                     { value: '2', label: '2+' },
                     { value: '3', label: '3+' },

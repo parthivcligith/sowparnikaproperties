@@ -1,0 +1,18 @@
+# robots.txt for Sowparnika Properties
+
+User-agent: *
+Allow: /
+Disallow: /cpanel/
+Disallow: /api/
+Disallow: /favorites
+Disallow: /login
+Disallow: /register
+Disallow: /_next/
+Disallow: /admin/
+
+# Sitemap
+Sitemap: https://sowparnikaproperties.com/sitemap.xml
+
+# Crawl-delay (optional)
+Crawl-delay: 1
+

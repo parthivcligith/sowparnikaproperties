@@ -24,7 +24,7 @@ import Link from 'next/link';
 import DefaultLayout from '@/features/Layout/DefaultLayout';
 
 const SettingsPage = () => {
-  const { isAuthenticated, isLoading, logout } = useAuth();
+  const { isAuthenticated, isLoading, isAdmin, logout } = useAuth();
   const router = useRouter();
   const toast = useToast();
   const [settings, setSettings] = useState({
@@ -35,10 +35,10 @@ const SettingsPage = () => {
   });
 
   useEffect(() => {
-    if (!isLoading && !isAuthenticated) {
-      router.push('/login');
+    if (!isLoading && (!isAuthenticated || !isAdmin)) {
+      router.push('/login?returnUrl=/cpanel/settings');
     }
-  }, [isAuthenticated, isLoading, router]);
+  }, [isAuthenticated, isLoading, isAdmin, router]);
 
   const handleSave = () => {
     // TODO: Save settings to database
@@ -58,7 +58,7 @@ const SettingsPage = () => {
     );
   }
 
-  if (!isAuthenticated) {
+  if (!isAuthenticated || !isAdmin) {
     return null;
   }
 

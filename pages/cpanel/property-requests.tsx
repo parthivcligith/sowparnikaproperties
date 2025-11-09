@@ -57,7 +57,7 @@ interface Property {
 }
 
 const PropertyRequestsPage = () => {
-  const { isAuthenticated, isLoading } = useAuth();
+  const { isAuthenticated, isLoading, isAdmin } = useAuth();
   const router = useRouter();
   const toast = useToast();
   const [properties, setProperties] = useState<Property[]>([]);
@@ -69,17 +69,17 @@ const PropertyRequestsPage = () => {
   const { isOpen: isRejectOpen, onOpen: onRejectOpen, onClose: onRejectClose } = useDisclosure();
 
   useEffect(() => {
-    if (!isLoading && !isAuthenticated) {
-      router.push('/login');
+    if (!isLoading && (!isAuthenticated || !isAdmin)) {
+      router.push('/login?returnUrl=/cpanel/property-requests');
     }
-  }, [isAuthenticated, isLoading, router]);
+  }, [isAuthenticated, isLoading, isAdmin, router]);
 
   useEffect(() => {
-    if (isAuthenticated) {
+    if (isAuthenticated && isAdmin) {
       fetchProperties();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isAuthenticated, selectedStatus]);
+  }, [isAuthenticated, isAdmin, selectedStatus]);
 
   const fetchProperties = async () => {
     try {
@@ -229,7 +229,7 @@ const PropertyRequestsPage = () => {
     );
   }
 
-  if (!isAuthenticated) {
+  if (!isAuthenticated || !isAdmin) {
     return null;
   }
 

@@ -167,8 +167,9 @@ const StandardNavbar = () => {
                       _hover={{ opacity: 0.8 }}
                       cursor="pointer"
                       transition="opacity 0.2s"
+                      as="span"
                     >
-                      Sowparnika Properties
+                      <Box as="span" sx={{ fontSize: '1.25em', display: 'inline-block' }}>S</Box>OWPARNIKA <Box as="span" sx={{ fontSize: '1.25em', display: 'inline-block' }}>P</Box>ROPERTIES
                     </Text>
                   </Link>
                 </Box>
@@ -176,15 +177,14 @@ const StandardNavbar = () => {
 
               {/* Center: Logo (Mobile) / Search Bar (Desktop) */}
               <Box 
-                flex={1} 
+                position="absolute"
+                left="50%"
+                transform="translateX(-50%)"
                 display="flex" 
                 justifyContent="center" 
                 alignItems="center"
-                position={{ base: 'absolute', md: 'static' }}
-                left="50%"
-                transform={{ base: 'translateX(-50%)', md: 'none' }}
                 maxW={{ base: 'calc(100% - 80px)', md: '400px', lg: '500px' }}
-                width={{ base: 'auto', md: 'auto' }}
+                width={{ base: 'auto', md: '400px', lg: '500px' }}
               >
                 {/* Mobile: Logo */}
                 <Box 
@@ -213,8 +213,9 @@ const StandardNavbar = () => {
                       _hover={{ opacity: 0.8 }}
                       cursor="pointer"
                       transition="opacity 0.2s"
+                      as="span"
                     >
-                      Sowparnika Properties
+                      <Box as="span" sx={{ fontSize: '1.25em', display: 'inline-block' }}>S</Box>OWPARNIKA <Box as="span" sx={{ fontSize: '1.25em', display: 'inline-block' }}>P</Box>ROPERTIES
                     </Text>
                   </Link>
                 </Box>
@@ -264,7 +265,9 @@ const StandardNavbar = () => {
                   display={{ base: 'none', md: 'flex' }}
                   flexShrink={0}
                 >
-                  {navigationLinks.map((item) => (
+                  {navigationLinks
+                    .filter((item) => !item.requiresAuth || isAuthenticated)
+                    .map((item) => (
                     <Link key={item.title} href={item.link}>
                       <Text
                         _hover={{ color: 'blue.600' }}
@@ -425,27 +428,6 @@ const StandardNavbar = () => {
                   </HStack>
                 </Box>
                 <HStack spacing={3} display={{ base: 'none', md: 'flex' }}>
-                  {mounted && !isLoading && isAuthenticated && (
-                    <Link href="/cpanel">
-                      <Button
-                        size="sm"
-                        bg="gray.900"
-                        color="white"
-                        borderRadius="0"
-                        px={6}
-                        fontSize="sm"
-                        fontFamily="'Playfair Display', serif"
-                        fontWeight="600"
-                        letterSpacing="0.1em"
-                        textTransform="uppercase"
-                        _hover={{ bg: 'gray.800' }}
-                        transition="all 0.2s"
-                        whiteSpace="nowrap"
-                      >
-                        CPANEL
-                      </Button>
-                    </Link>
-                  )}
                   <Link href="/submit-listing">
                     <Button
                       size="sm"
@@ -489,7 +471,9 @@ const StandardNavbar = () => {
                 {/* Main Navigation Links */}
                 <Box p={4} borderBottomWidth="1px">
                   <VStack align="stretch" spacing={3}>
-                    {navigationLinks.map((item) => (
+                    {navigationLinks
+                    .filter((item) => !item.requiresAuth || isAuthenticated)
+                    .map((item) => (
                       <Link key={item.title} href={item.link} onClick={onClose}>
                         <Text
                           fontSize="md"

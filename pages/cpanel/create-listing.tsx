@@ -45,7 +45,7 @@ const ReactQuill = dynamic(() => import('react-quill'), { ssr: false });
 import 'react-quill/dist/quill.snow.css';
 
 const CreateListingPage = () => {
-  const { isAuthenticated, isLoading } = useAuth();
+  const { isAuthenticated, isLoading, isAdmin } = useAuth();
   const router = useRouter();
   const toast = useToast();
 
@@ -225,10 +225,10 @@ const CreateListingPage = () => {
   };
 
   useEffect(() => {
-    if (!isLoading && !isAuthenticated) {
-      router.push('/login');
+    if (!isLoading && (!isAuthenticated || !isAdmin)) {
+      router.push('/login?returnUrl=/cpanel/create-listing');
     }
-  }, [isAuthenticated, isLoading, router]);
+  }, [isAuthenticated, isLoading, isAdmin, router]);
 
   if (isLoading) {
     return (
@@ -240,7 +240,7 @@ const CreateListingPage = () => {
     );
   }
 
-  if (!isAuthenticated) {
+  if (!isAuthenticated || !isAdmin) {
     return null;
   }
 

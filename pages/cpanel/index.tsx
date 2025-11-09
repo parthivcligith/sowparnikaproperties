@@ -138,7 +138,7 @@ const DashboardStats = () => {
 };
 
 const CpanelDashboard = () => {
-  const { isAuthenticated, isLoading } = useAuth();
+  const { isAuthenticated, isLoading, isAdmin } = useAuth();
   const router = useRouter();
 
   if (isLoading) {
@@ -149,8 +149,8 @@ const CpanelDashboard = () => {
     );
   }
 
-  if (!isAuthenticated) {
-    router.push('/login');
+  if (!isAuthenticated || !isAdmin) {
+    router.push('/login?returnUrl=/cpanel');
     return null;
   }
 

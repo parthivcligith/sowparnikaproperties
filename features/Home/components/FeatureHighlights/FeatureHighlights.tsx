@@ -41,7 +41,21 @@ const FeatureHighlights: React.FC = () => {
   ];
 
   return (
-    <Box bg="gray.50" pt={{ base: 4, md: 8 }} pb={{ base: 8, md: 20 }}>
+    <Box 
+      bg="linear-gradient(to bottom, #fafafa 0%, #f5f5f5 100%)"
+      pt={{ base: 4, md: 8 }} 
+      pb={{ base: 8, md: 20 }}
+      position="relative"
+      _before={{
+        content: '""',
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        right: 0,
+        height: '1px',
+        bg: 'linear-gradient(to right, transparent, luxury.200, transparent)',
+      }}
+    >
       <Container maxW="container.xl" px={{ base: 4, md: 6 }}>
         {/* Logo */}
         <Box 
@@ -69,8 +83,13 @@ const FeatureHighlights: React.FC = () => {
             fontWeight="600"
             fontFamily="'Playfair Display', serif"
             textAlign="center"
-            color="gray.900"
+            bgGradient="linear(to-r, gray.900, luxury.700, gray.900)"
+            bgClip="text"
             lineHeight="1.2"
+            sx={{
+              WebkitTextFillColor: 'transparent',
+              WebkitBackgroundClip: 'text',
+            }}
           >
             The Leading Marketplace for Luxury
             <Box as="br" display={{ base: 'block', md: 'block' }} />
@@ -80,46 +99,74 @@ const FeatureHighlights: React.FC = () => {
 
         {/* Feature Grid */}
         <Grid templateColumns={{ base: '1fr', md: 'repeat(3, 1fr)' }} gap={{ base: 4, md: 12 }}>
-          {features.map((feature, index) => (
-            <GridItem key={index}>
-              <VStack spacing={{ base: 2, md: 6 }} align="center" textAlign="center">
-                <Box color="gray.900" mb={{ base: 0, md: 2 }}>
-                  <Box display={{ base: 'block', md: 'none' }}>
-                    <feature.iconComponent size={24} strokeWidth={1.5} />
+          {features.map((feature, index) => {
+            const accentConfigs = [
+              { color: 'luxury.600', bg: 'luxury.50', shadow: 'rgba(3, 105, 161, 0.2)' },
+              { color: 'accent.600', bg: 'accent.50', shadow: 'rgba(192, 38, 211, 0.2)' },
+              { color: 'warm.600', bg: 'warm.50', shadow: 'rgba(245, 158, 11, 0.2)' },
+            ];
+            const accentConfig = accentConfigs[index % accentConfigs.length];
+            const accentColor = accentConfig.color;
+            const accentBg = accentConfig.bg;
+            const accentShadow = accentConfig.shadow;
+            
+            return (
+              <GridItem key={index}>
+                <VStack spacing={{ base: 2, md: 6 }} align="center" textAlign="center">
+                  <Box 
+                    color={accentColor} 
+                    mb={{ base: 0, md: 2 }}
+                    p={4}
+                    borderRadius="full"
+                    bg={accentBg}
+                    transition="all 0.3s"
+                    _hover={{
+                      transform: 'scale(1.1)',
+                      color: accentColor,
+                      boxShadow: `0 8px 16px ${accentShadow}`,
+                    }}
+                  >
+                    <Box display={{ base: 'block', md: 'none' }}>
+                      <feature.iconComponent size={24} strokeWidth={1.5} />
+                    </Box>
+                    <Box display={{ base: 'none', md: 'block' }}>
+                      <feature.iconComponent size={48} strokeWidth={1.5} />
+                    </Box>
                   </Box>
-                  <Box display={{ base: 'none', md: 'block' }}>
-                    <feature.iconComponent size={48} strokeWidth={1.5} />
+                  <Heading
+                    as="h3"
+                    fontSize={{ base: 'sm', md: 'xl' }}
+                    fontWeight="700"
+                    fontFamily="'Playfair Display', serif"
+                    color="gray.900"
+                    lineHeight="1.3"
+                    _hover={{
+                      color: accentColor,
+                      transition: 'color 0.3s',
+                    }}
+                  >
+                    {feature.title}
+                  </Heading>
+                  <Box
+                    as="div"
+                    fontSize={{ base: 'xs', md: 'md' }}
+                    color="gray.700"
+                    lineHeight={{ base: '1.4', md: '1.7' }}
+                    fontFamily="'Bodoni Moda', serif"
+                    fontWeight="400"
+                    maxW="400px"
+                    sx={{
+                      fontVariationSettings: '"opsz" 14, "wght" 300',
+                      letterSpacing: '0.01em',
+                      fontOpticalSizing: 'auto',
+                    }}
+                  >
+                    {feature.description}
                   </Box>
-                </Box>
-                <Heading
-                  as="h3"
-                  fontSize={{ base: 'sm', md: 'xl' }}
-                  fontWeight="700"
-                  fontFamily="'Playfair Display', serif"
-                  color="gray.900"
-                  lineHeight="1.3"
-                >
-                  {feature.title}
-                </Heading>
-                <Box
-                  as="div"
-                  fontSize={{ base: 'xs', md: 'md' }}
-                  color="gray.900"
-                  lineHeight={{ base: '1.4', md: '1.7' }}
-                  fontFamily="'Bodoni Moda', serif"
-                  fontWeight="400"
-                  maxW="400px"
-                  sx={{
-                    fontVariationSettings: '"opsz" 14, "wght" 300',
-                    letterSpacing: '0.01em',
-                    fontOpticalSizing: 'auto',
-                  }}
-                >
-                  {feature.description}
-                </Box>
-              </VStack>
-            </GridItem>
-          ))}
+                </VStack>
+              </GridItem>
+            );
+          })}
         </Grid>
       </Container>
     </Box>

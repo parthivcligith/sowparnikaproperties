@@ -29,8 +29,9 @@ const About = () => {
 
   return (
     <DefaultLayout
-      title="About Us - Sowparnika Properties"
-      description="Learn about Sowparnika Properties - your trusted real estate partner in Kakkanad, Kochi. We offer verified properties, expert consultation, and full-service support."
+      title="About Us - Sowparnika Properties | Trusted Real Estate in Kakkanad, Kochi"
+      description="Learn about Sowparnika Properties - your trusted real estate partner in Kakkanad, Kochi. We offer verified properties, expert consultation, and full-service support for buying, selling, and renting properties."
+      keywords="about Sowparnika Properties, real estate company Kakkanad, property dealers Kochi, real estate services Kakkanad, trusted real estate agents"
     >
       <Box bg="gray.50" minH="100vh" pt={{ base: '100px', md: '120px' }} pb={20}>
         <Container maxW="container.xl">

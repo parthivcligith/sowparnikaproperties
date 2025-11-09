@@ -34,7 +34,7 @@ import { navigationLinks, propertyTypes } from '@/features/common/modules/Naviga
 import { useAuth } from '@/contexts/AuthContext';
 
 const LiquidGlassNavbar = () => {
-  const { isAuthenticated, isLoading, logout } = useAuth();
+  const { isAuthenticated, isLoading, user, isAdmin, logout } = useAuth();
   const [mounted, setMounted] = useState(false);
   const { isOpen, onOpen, onClose } = useDisclosure();
   const router = useRouter();
@@ -155,8 +155,9 @@ const LiquidGlassNavbar = () => {
                     _hover={{ opacity: 0.9 }}
                     cursor="pointer"
                     transition="color 0.3s ease"
+                    as="span"
                   >
-                    Sowparnika Properties
+                    <Box as="span" sx={{ fontSize: '1.25em', display: 'inline-block' }}>S</Box>OWPARNIKA <Box as="span" sx={{ fontSize: '1.25em', display: 'inline-block' }}>P</Box>ROPERTIES
                   </Text>
                 </Link>
               </Box>
@@ -164,15 +165,14 @@ const LiquidGlassNavbar = () => {
 
             {/* Center: Logo (Mobile) / Search Bar (Desktop) */}
             <Box 
-              flex={1} 
+              position="absolute"
+              left="50%"
+              transform="translateX(-50%)"
               display="flex" 
               justifyContent="center" 
               alignItems="center"
-              position={{ base: 'absolute', md: 'static' }}
-              left="50%"
-              transform={{ base: 'translateX(-50%)', md: 'none' }}
               maxW={{ base: 'calc(100% - 80px)', md: '400px', lg: '500px' }}
-              width={{ base: 'auto', md: 'auto' }}
+              width={{ base: 'auto', md: '400px', lg: '500px' }}
             >
               {/* Mobile: Logo */}
               <Box 
@@ -202,8 +202,9 @@ const LiquidGlassNavbar = () => {
                     _hover={{ opacity: 0.9 }}
                     cursor="pointer"
                     transition="color 0.3s ease"
+                    as="span"
                   >
-                    Sowparnika Properties
+                    <Box as="span" sx={{ fontSize: '1.25em', display: 'inline-block' }}>S</Box>OWPARNIKA <Box as="span" sx={{ fontSize: '1.25em', display: 'inline-block' }}>P</Box>ROPERTIES
                   </Text>
                 </Link>
               </Box>
@@ -257,21 +258,55 @@ const LiquidGlassNavbar = () => {
                 }}
                 transition="color 0.3s ease"
               >
-                {navigationLinks.map((item) => (
+                {navigationLinks
+                  .filter((item) => !item.requiresAuth || (mounted && isAuthenticated))
+                  .map((item) => (
                   <Link key={item.title} href={item.link}>
                     <Text
-                      _hover={{ color: isScrolledPastHero ? 'blue.600' : 'blue.200' }}
-                      transition="color 0.2s"
+                      _hover={{ 
+                        color: isScrolledPastHero ? 'luxury.700' : 'luxury.200',
+                        transform: 'translateY(-1px)',
+                      }}
+                      transition="all 0.2s"
                       cursor="pointer"
                       fontWeight="600"
                       fontSize="sm"
                       fontFamily="'Playfair Display', serif"
                       color={isScrolledPastHero ? 'gray.900' : 'white'}
+                      position="relative"
+                      _after={{
+                        content: '""',
+                        position: 'absolute',
+                        bottom: '-2px',
+                        left: 0,
+                        width: '0%',
+                        height: '2px',
+                        bg: isScrolledPastHero ? 'luxury.700' : 'luxury.200',
+                        transition: 'width 0.3s',
+                      }}
+                      sx={{
+                        '&:hover::after': {
+                          width: '100%',
+                        },
+                      }}
                     >
                       {item.title}
                     </Text>
                   </Link>
                 ))}
+                {mounted && !isLoading && isAuthenticated && user && (
+                  <Text
+                    fontSize="sm"
+                    fontFamily="'Playfair Display', serif"
+                    fontWeight="600"
+                    color={isScrolledPastHero ? 'gray.900' : 'white'}
+                    sx={{
+                      textShadow: isScrolledPastHero ? 'none' : '0 2px 8px rgba(0, 0, 0, 0.3)',
+                    }}
+                  >
+                    Welcome, {user.username}
+                  </Text>
+                )}
                 {mounted && !isLoading && !isAuthenticated && (
                   <Link href="/login">
                     <Button
@@ -282,10 +317,12 @@ const LiquidGlassNavbar = () => {
                       fontSize="sm"
                       fontFamily="'Playfair Display', serif"
                       fontWeight="600"
-                      color={isScrolledPastHero ? 'gray.900' : 'white'}
-                      borderColor={isScrolledPastHero ? 'gray.900' : 'white'}
+                      color={isScrolledPastHero ? 'luxury.700' : 'white'}
+                      borderColor={isScrolledPastHero ? 'luxury.700' : 'white'}
                       _hover={{
-                        bg: isScrolledPastHero ? 'gray.50' : 'rgba(255, 255, 255, 0.2)',
+                        bg: isScrolledPastHero ? 'luxury.50' : 'rgba(255, 255, 255, 0.2)',
+                        borderColor: isScrolledPastHero ? 'luxury.800' : 'white',
+                        color: isScrolledPastHero ? 'luxury.800' : 'white',
                         transform: 'scale(1.05)',
                       }}
                       transition="all 0.3s ease"
@@ -354,8 +391,11 @@ const LiquidGlassNavbar = () => {
                   {propertyTypes.map((item) => (
                     <Link key={item.title} href={item.link}>
                       <Text
-                        _hover={{ color: isScrolledPastHero ? 'blue.600' : 'blue.200' }}
-                        transition="color 0.2s"
+                        _hover={{ 
+                          color: isScrolledPastHero ? 'luxury.700' : 'luxury.200',
+                          transform: 'translateY(-1px)',
+                        }}
+                        transition="all 0.2s"
                         cursor="pointer"
                         fontWeight="500"
                         fontSize={{ base: 'xs', md: 'sm' }}
@@ -363,6 +403,22 @@ const LiquidGlassNavbar = () => {
                         whiteSpace="nowrap"
                         color={isScrolledPastHero ? 'gray.900' : 'white'}
                         flexShrink={0}
+                        position="relative"
+                        _after={{
+                          content: '""',
+                          position: 'absolute',
+                          bottom: '-2px',
+                          left: 0,
+                          width: '0%',
+                          height: '2px',
+                          bg: isScrolledPastHero ? 'luxury.700' : 'luxury.200',
+                          transition: 'width 0.3s',
+                        }}
+                        sx={{
+                          '&:hover::after': {
+                            width: '100%',
+                          },
+                        }}
                       >
                         {item.title}
                       </Text>
@@ -375,16 +431,18 @@ const LiquidGlassNavbar = () => {
                   <Link href="/cpanel">
                     <Button
                       size="sm"
-                      bg={isScrolledPastHero ? 'gray.900' : 'white'}
-                      color={isScrolledPastHero ? 'white' : 'gray.900'}
+                      bg={isScrolledPastHero ? 'luxury.700' : 'white'}
+                      color={isScrolledPastHero ? 'white' : 'luxury.700'}
                       borderRadius="full"
                       px={6}
                       fontSize="sm"
                       fontFamily="'Playfair Display', serif"
                       fontWeight="600"
                       _hover={{
-                        bg: isScrolledPastHero ? 'gray.800' : 'gray.100',
+                        bg: isScrolledPastHero ? 'luxury.800' : 'luxury.50',
+                        color: isScrolledPastHero ? 'white' : 'luxury.800',
                         transform: 'scale(1.05)',
+                        boxShadow: '0 4px 12px rgba(3, 105, 161, 0.2)',
                       }}
                       transition="all 0.3s ease"
                       whiteSpace="nowrap"
@@ -396,16 +454,15 @@ const LiquidGlassNavbar = () => {
                 <Link href="/submit-listing">
                   <Button
                     size="sm"
-                    bg={isScrolledPastHero ? 'gray.900' : 'white'}
-                    color={isScrolledPastHero ? 'white' : 'gray.900'}
+                    variant="accent"
                     borderRadius="full"
                     px={6}
                     fontSize="sm"
                     fontFamily="'Playfair Display', serif"
                     fontWeight="600"
                     _hover={{
-                      bg: isScrolledPastHero ? 'gray.800' : 'gray.100',
                       transform: 'scale(1.05)',
+                      boxShadow: '0 4px 12px rgba(245, 158, 11, 0.3)',
                     }}
                     transition="all 0.3s ease"
                     whiteSpace="nowrap"
@@ -436,7 +493,9 @@ const LiquidGlassNavbar = () => {
                 {/* Main Navigation Links */}
                 <Box p={4} borderBottomWidth="1px">
                   <VStack align="stretch" spacing={3}>
-                    {navigationLinks.map((item) => (
+                    {navigationLinks
+                      .filter((item) => !item.requiresAuth || (mounted && isAuthenticated))
+                      .map((item) => (
                       <Link key={item.title} href={item.link} onClick={onClose}>
                         <Text
                           fontSize="md"
@@ -479,7 +538,19 @@ const LiquidGlassNavbar = () => {
               {/* All Buttons at the Bottom */}
               <Box borderTopWidth="1px" p={4}>
                 <VStack align="stretch" spacing={3}>
-                  {/* Sign In / Register Button */}
+                  {/* Welcome Message / Sign In Button */}
+                  {mounted && !isLoading && isAuthenticated && user && (
+                    <Box p={3} bg="gray.50" borderRadius="md" mb={2}>
+                      <Text
+                        fontSize="sm"
+                        fontWeight="600"
+                        fontFamily="'Playfair Display', serif"
+                        color="gray.900"
+                      >
+                        Welcome, {user.username}
+                      </Text>
+                    </Box>
+                  )}
                   {mounted && !isLoading && !isAuthenticated && (
                     <Link href="/login" onClick={onClose} style={{ width: '100%' }}>
                       <Button
@@ -501,8 +572,8 @@ const LiquidGlassNavbar = () => {
                     </Link>
                   )}
 
-                  {/* CPANEL and Sell With Us Buttons */}
-                  {mounted && !isLoading && isAuthenticated && (
+                  {/* CPANEL Button - Only for Admin */}
+                  {mounted && !isLoading && isAuthenticated && isAdmin && (
                     <Link href="/cpanel" onClick={onClose} style={{ width: '100%' }}>
                       <Button
                         size="lg"

@@ -5,7 +5,7 @@ import { navigationLinks } from '@/features/common/modules/Navigation/Navigation
 import { useAuth } from '@/contexts/AuthContext';
 
 const NavigationDesktop = () => {
-  const { isAuthenticated, isLoading } = useAuth();
+  const { isAuthenticated, isLoading, user, isAdmin, logout } = useAuth();
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
@@ -33,13 +33,15 @@ const NavigationDesktop = () => {
                 objectFit="contain"
                 loading="eager"
               />
-              <Text fontSize="xl" fontWeight="bold" color="blue.900" display={{ base: 'none', lg: 'block' }} fontFamily="'Playfair Display', serif">
-                Sowparnika Properties
+              <Text fontSize="xl" fontWeight="bold" color="blue.900" display={{ base: 'none', lg: 'block' }} fontFamily="'Playfair Display', serif" as="span">
+                <Box as="span" sx={{ fontSize: '1.25em', display: 'inline-block' }}>S</Box>owparnika <Box as="span" sx={{ fontSize: '1.25em', display: 'inline-block' }}>P</Box>roperties
               </Text>
             </Box>
           </Link>
           <Flex gap='12' alignItems='center' fontWeight='medium'>
-            {navigationLinks.map((item) => (
+            {navigationLinks
+              .filter((item) => !item.requiresAuth || (mounted && isAuthenticated))
+              .map((item) => (
               <NavigationLinks
                 key={item.title}
                 link={item.link}
@@ -47,17 +49,22 @@ const NavigationDesktop = () => {
                 icon={<item.icon />}
               />
             ))}
-            {mounted && !isLoading && isAuthenticated && (
-              <Link href="/cpanel">
+            {mounted && !isLoading && isAuthenticated && user && (
+              <>
+                <Text fontSize="sm" fontWeight="600" color="blue.900">
+                  Welcome, {user.username}
+                </Text>
                 <Button
                   padding="1.5rem"
-                  colorScheme="twitter"
+                  colorScheme="gray"
                   fontSize="0.8rem"
                   fontWeight="medium"
+                  variant="outline"
+                  onClick={logout}
                 >
-                  CPANEL
+                  LOGOUT
                 </Button>
-              </Link>
+              </>
             )}
             {mounted && !isLoading && !isAuthenticated && (
               <Link href="/login">

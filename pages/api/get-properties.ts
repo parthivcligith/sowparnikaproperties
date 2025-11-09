@@ -41,6 +41,7 @@ export default async function handler(
       city,
       bhk,
       status,
+      featured,
       sortBy = 'created_at',
       sortOrder = 'desc',
       page = '1',
@@ -134,10 +135,17 @@ export default async function handler(
         console.log('Processing propertyType filter:', propertyType, '-> normalized:', normalizedType);
       }
       
-      // Special case: "plot" or "land" should show Plot, Land, and Commercial Land
-      if (normalizedType === 'plot' || normalizedType === 'land') {
+      // Special case: "plot" should show only Plot and Land (not Commercial Land)
+      if (normalizedType === 'plot') {
         if (process.env.NODE_ENV === 'development') {
-          console.log('Applying plot/land filter: Plot, Land, Commercial Land');
+          console.log('Applying plot filter: Plot and Land only');
+        }
+        query = query.in('property_type', ['Plot', 'Land']);
+      }
+      // Special case: "land" should show Plot, Land, and Commercial Land
+      else if (normalizedType === 'land') {
+        if (process.env.NODE_ENV === 'development') {
+          console.log('Applying land filter: Plot, Land, Commercial Land');
         }
         query = query.in('property_type', ['Plot', 'Land', 'Commercial Land']);
       }
@@ -217,9 +225,15 @@ export default async function handler(
     // Status filter
     if (status && typeof status === 'string') {
       query = query.eq('status', status);
-    } else {
-      // Default to active properties only
+    } else if (!featured) {
+      // Default to active properties only (unless filtering by featured)
       query = query.eq('status', 'active');
+    }
+
+    // Featured filter
+    if (featured && typeof featured === 'string') {
+      const isFeatured = featured.toLowerCase() === 'true';
+      query = query.eq('featured', isFeatured);
     }
 
     // Sorting

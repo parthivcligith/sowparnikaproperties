@@ -1,10 +1,11 @@
-import { HiCube, HiNewspaper, HiPhoneArrowUpRight, HiHome } from 'react-icons/hi2';
+import { HiCube, HiNewspaper, HiPhoneArrowUpRight, HiHome, HiHeart } from 'react-icons/hi2';
 import { IconType } from 'react-icons/lib';
 
 export type navigationLink = {
   title: string;
   link: string;
   icon: IconType;
+  requiresAuth?: boolean;
 };
 
 export type propertyTypeLink = {
@@ -15,6 +16,7 @@ export type propertyTypeLink = {
 export const navigationLinks: Array<navigationLink> = [
   { title: 'Home', link: '/', icon: HiHome },
   { title: 'Properties', link: '/properties', icon: HiCube },
+  { title: 'Favorites', link: '/favorites', icon: HiHeart, requiresAuth: true },
   { title: 'Contact', link: '/contact', icon: HiNewspaper },
   {
     title: '+91 9446211417',

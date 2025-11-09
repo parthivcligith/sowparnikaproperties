@@ -57,6 +57,7 @@ export default async function handler(
       amenities,
       images,
       status,
+      featured,
     } = req.body;
 
     if (!id) {
@@ -113,6 +114,7 @@ export default async function handler(
       updateData.images = Array.isArray(images) ? images : [];
     }
     if (status !== undefined) updateData.status = status;
+    if (featured !== undefined) updateData.featured = featured === true || featured === 'true';
     updateData.updated_at = new Date().toISOString();
 
     console.log('Attempting to update property:', id, updateData);

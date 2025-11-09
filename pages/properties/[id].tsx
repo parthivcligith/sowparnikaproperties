@@ -13,20 +13,25 @@ import {
   Badge,
   Divider,
   VStack,
+  IconButton,
+  useToast,
 } from '@chakra-ui/react';
 import { TbMapPin, TbEye, TbHeart } from 'react-icons/tb';
-import { FiInfo, FiUser, FiPhone } from 'react-icons/fi';
+import { FiInfo, FiUser, FiPhone, FiHeart, FiShare2 } from 'react-icons/fi';
 import DefaultLayout from '@/features/Layout/DefaultLayout';
 import PropertyImageGallery from '@/features/Property/components/PropertyImageGallery/PropertyImageGallery';
 import PropertyBreadcrumbs from '@/features/Property/components/PropertyBreadcrumbs/PropertyBreadcrumbs';
 import ContactAgent from '@/features/Property/components/ContactAgent/ContactAgent';
 import { getProperty } from '@/features/Property/API/getProperty';
 import { useAuth } from '@/contexts/AuthContext';
+import { useFavorites } from '@/contexts/FavoritesContext';
 
 const PropertyDetail = ({
   property,
 }: InferGetServerSidePropsType<typeof getServerSideProps>) => {
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, isAdmin } = useAuth();
+  const { isFavorite, toggleFavorite } = useFavorites();
+  const toast = useToast();
   const {
     address,
     propertyType,
@@ -55,9 +60,174 @@ const PropertyDetail = ({
   // Get owner information
   const ownerName = property.owner_name || '';
   const ownerNumber = property.owner_number || '';
+  
+  // Get property ID for favorites
+  const propertyId = property.id || externalID;
+  const favorite = isFavorite(propertyId);
+  
+  const handleFavoriteClick = () => {
+    if (isAuthenticated) {
+      toggleFavorite(propertyId);
+    } else {
+      window.location.href = '/login';
+    }
+  };
+
+  const handleShareClick = async () => {
+    const propertyUrl = `${window.location.origin}/properties/${propertyId}`;
+    const shareText = `Check out this property: ${title} - ${propertyUrl}`;
+    
+    // Try to use Web Share API if available (mobile)
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: title,
+          text: `Check out this property: ${title}`,
+          url: propertyUrl,
+        });
+        toast({
+          title: 'Shared',
+          description: 'Property shared successfully',
+          status: 'success',
+          duration: 2000,
+        });
+      } catch (error: any) {
+        // User cancelled or error occurred
+        if (error.name !== 'AbortError') {
+          // Fall back to clipboard
+          await copyToClipboard(propertyUrl);
+        }
+      }
+    } else {
+      // Fall back to clipboard
+      await copyToClipboard(propertyUrl);
+    }
+  };
+
+  const copyToClipboard = async (text: string) => {
+    try {
+      await navigator.clipboard.writeText(text);
+      toast({
+        title: 'Link copied',
+        description: 'Property link copied to clipboard',
+        status: 'success',
+        duration: 2000,
+      });
+    } catch (error) {
+      // Fallback for older browsers
+      const textArea = document.createElement('textarea');
+      textArea.value = text;
+      textArea.style.position = 'fixed';
+      textArea.style.left = '-999999px';
+      document.body.appendChild(textArea);
+      textArea.select();
+      try {
+        document.execCommand('copy');
+        toast({
+          title: 'Link copied',
+          description: 'Property link copied to clipboard',
+          status: 'success',
+          duration: 2000,
+        });
+      } catch (err) {
+        toast({
+          title: 'Error',
+          description: 'Failed to copy link',
+          status: 'error',
+          duration: 2000,
+        });
+      }
+      document.body.removeChild(textArea);
+    }
+  };
+
+  // SEO Meta Tags
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://sowparnikaproperties.com';
+  const propertyUrl = `${siteUrl}/properties/${propertyId}`;
+  const propertyImage = images && images.length > 0 ? images[0] : `${siteUrl}/logo.png`;
+  const propertyPrice = parseFloat(price.replace(/[^0-9.]/g, '') || '0');
+  const propertyDescription = description 
+    ? description.replace(/<[^>]*>/g, '').substring(0, 160) 
+    : `${title} - ${propertyType} in ${propertyCity}${propertyState ? `, ${propertyState}` : ''}. ${purpose === 'Sale' ? 'For Sale' : 'For Rent'}. ${rooms ? `${rooms} BHK` : ''} ${baths ? `${baths} Bath` : ''}. ${lotSize ? `Area: ${lotSize}` : ''}`;
+
+  // Structured Data for Property
+  const structuredData = {
+    '@context': 'https://schema.org',
+    '@type': 'RealEstateListing',
+    name: title,
+    description: propertyDescription,
+    url: propertyUrl,
+    image: propertyImage,
+    address: {
+      '@type': 'PostalAddress',
+      streetAddress: address || '',
+      addressLocality: propertyCity || '',
+      addressRegion: propertyState || '',
+      addressCountry: 'IN'
+    },
+    geo: propertyCity ? {
+      '@type': 'GeoCoordinates',
+      latitude: '9.9816',
+      longitude: '76.2999'
+    } : undefined,
+    numberOfRooms: rooms || undefined,
+    numberOfBathroomsTotal: baths || undefined,
+    floorSize: lotSize ? {
+      '@type': 'QuantitativeValue',
+      value: property.area_size || sqSize,
+      unitCode: property.area_unit || 'SQM'
+    } : undefined,
+    price: propertyPrice > 0 ? {
+      '@type': 'MonetaryAmount',
+      currency: 'INR',
+      value: propertyPrice
+    } : undefined,
+    category: propertyType,
+    offers: {
+      '@type': 'Offer',
+      price: propertyPrice > 0 ? propertyPrice : undefined,
+      priceCurrency: 'INR',
+      availability: property.status === 'active' ? 'https://schema.org/InStock' : 'https://schema.org/OutOfStock',
+      url: propertyUrl
+    },
+    datePosted: property.created_at || new Date().toISOString(),
+    validThrough: property.updated_at || new Date().toISOString()
+  };
+
+  // Remove undefined fields from structured data
+  const cleanStructuredData: any = {};
+  Object.keys(structuredData).forEach(key => {
+    const value = structuredData[key as keyof typeof structuredData];
+    if (value !== undefined) {
+      if (typeof value === 'object' && value !== null && !Array.isArray(value)) {
+        // Recursively clean nested objects
+        const cleanedNested: any = {};
+        Object.keys(value).forEach(nestedKey => {
+          if ((value as any)[nestedKey] !== undefined) {
+            cleanedNested[nestedKey] = (value as any)[nestedKey];
+          }
+        });
+        if (Object.keys(cleanedNested).length > 0) {
+          cleanStructuredData[key] = cleanedNested;
+        }
+      } else {
+        cleanStructuredData[key] = value;
+      }
+    }
+  });
+
+  const seoTitle = `${title} - ${propertyType} ${purpose === 'Sale' ? 'for Sale' : 'for Rent'} in ${propertyCity}${propertyState ? `, ${propertyState}` : ''} | Sowparnika Properties`;
+  const seoKeywords = `${title}, ${propertyType} ${propertyCity}, ${purpose === 'Sale' ? 'property for sale' : 'property for rent'} ${propertyCity}, ${rooms ? `${rooms} BHK` : ''} ${propertyCity}, real estate ${propertyCity}, Sowparnika Properties`;
 
   return (
-    <DefaultLayout title={title} description={description}>
+    <DefaultLayout 
+      title={seoTitle}
+      description={propertyDescription}
+      keywords={seoKeywords}
+      image={propertyImage}
+      type="article"
+      structuredData={cleanStructuredData}
+    >
       <Box bg="white" minH="100vh">
         <Box maxWidth="1400px" margin="0 auto" px={{ base: 4, md: 8 }} py={8}>
           {/* Breadcrumbs */}
@@ -81,16 +251,58 @@ const PropertyDetail = ({
                   <Icon as={FiInfo} color="gray.500" cursor="pointer" />
                 </HStack>
 
-                {/* Title */}
-                <Text
-                  fontSize="2xl"
-                  fontWeight="600"
-                  mb={4}
-                  fontFamily="'Playfair Display', serif"
-                  color="gray.800"
-                >
-                  {title}
-                </Text>
+                {/* Title, Share and Favorite Buttons */}
+                <Flex justify="space-between" align="flex-start" mb={4} gap={4}>
+                  <Text
+                    fontSize="2xl"
+                    fontWeight="600"
+                    fontFamily="'Playfair Display', serif"
+                    color="gray.800"
+                    flex={1}
+                  >
+                    {title}
+                  </Text>
+                  <HStack spacing={2}>
+                    {/* Share Button (Admin only) */}
+                    {isAdmin && (
+                      <IconButton
+                        aria-label="Share property"
+                        icon={<FiShare2 />}
+                        size="md"
+                        bg="white"
+                        color="gray.700"
+                        border="1px solid"
+                        borderColor="gray.300"
+                        borderRadius="full"
+                        _hover={{
+                          bg: 'gray.100',
+                          transform: 'scale(1.1)',
+                        }}
+                        onClick={handleShareClick}
+                        transition="all 0.2s"
+                      />
+                    )}
+                    {/* Favorite Button */}
+                    {isAuthenticated && (
+                      <IconButton
+                        aria-label={favorite ? 'Remove from favorites' : 'Add to favorites'}
+                        icon={<FiHeart />}
+                        size="md"
+                        bg={favorite ? 'red.500' : 'white'}
+                        color={favorite ? 'white' : 'gray.700'}
+                        border="1px solid"
+                        borderColor={favorite ? 'red.500' : 'gray.300'}
+                        borderRadius="full"
+                        _hover={{
+                          bg: favorite ? 'red.600' : 'gray.100',
+                          transform: 'scale(1.1)',
+                        }}
+                        onClick={handleFavoriteClick}
+                        transition="all 0.2s"
+                      />
+                    )}
+                  </HStack>
+                </Flex>
 
                 {/* Lot Size and Location */}
                 <HStack spacing={4} mb={4} color="gray.600" fontSize="sm">
@@ -233,7 +445,7 @@ const PropertyDetail = ({
                 </Box>
 
                 {/* Owner Details - Admin Only */}
-                {isAuthenticated && (ownerName || ownerNumber) && (
+                {isAdmin && (ownerName || ownerNumber) && (
                   <Box mt={8} p={6} border="2px solid" borderColor="gray.200" borderRadius="lg" bg="white">
                     <HStack spacing={3} mb={4}>
                       <Icon as={FiUser} boxSize={5} color="gray.700" />

@@ -31,6 +31,7 @@ import {
   useDisclosure,
   Flex,
   Image,
+  Switch,
 } from '@chakra-ui/react';
 import { FiSearch, FiEdit, FiTrash2, FiEye, FiHome } from 'react-icons/fi';
 import Link from 'next/link';
@@ -43,12 +44,13 @@ interface Property {
   price: number;
   city: string;
   status: string;
+  featured?: boolean;
   images: string[];
   created_at: string;
 }
 
 const ManageListingsPage = () => {
-  const { isAuthenticated, isLoading } = useAuth();
+  const { isAuthenticated, isLoading, isAdmin } = useAuth();
   const router = useRouter();
   const toast = useToast();
   const { isOpen, onOpen, onClose } = useDisclosure();
@@ -58,17 +60,17 @@ const ManageListingsPage = () => {
   const [propertyToDelete, setPropertyToDelete] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!isLoading && !isAuthenticated) {
-      router.push('/login');
+    if (!isLoading && (!isAuthenticated || !isAdmin)) {
+      router.push('/login?returnUrl=/cpanel/listings');
     }
-  }, [isAuthenticated, isLoading, router]);
+  }, [isAuthenticated, isLoading, isAdmin, router]);
 
   useEffect(() => {
-    if (isAuthenticated) {
+    if (isAuthenticated && isAdmin) {
       fetchProperties();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isAuthenticated]);
+  }, [isAuthenticated, isAdmin]);
 
   const fetchProperties = async () => {
     try {
@@ -95,6 +97,48 @@ const ManageListingsPage = () => {
       });
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleToggleFeatured = async (id: string, currentFeatured: boolean) => {
+    try {
+      const response = await fetch('/api/update-property', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          id,
+          featured: !currentFeatured,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        toast({
+          title: 'Success',
+          description: `Property ${!currentFeatured ? 'marked as' : 'removed from'} featured`,
+          status: 'success',
+          duration: 3000,
+        });
+        fetchProperties();
+      } else {
+        toast({
+          title: 'Error',
+          description: data.error || 'Failed to update featured status',
+          status: 'error',
+          duration: 3000,
+        });
+      }
+    } catch (error) {
+      console.error('Error toggling featured:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to update featured status',
+        status: 'error',
+        duration: 3000,
+      });
     }
   };
 
@@ -174,7 +218,7 @@ const ManageListingsPage = () => {
     );
   }
 
-  if (!isAuthenticated) {
+  if (!isAuthenticated || !isAdmin) {
     return null;
   }
 
@@ -299,6 +343,7 @@ const ManageListingsPage = () => {
                       <Th color="gray.900" fontFamily="'Playfair Display', serif" fontWeight="700" textTransform="uppercase" letterSpacing="0.05em" fontSize="xs" py={4} whiteSpace="nowrap">Price</Th>
                       <Th color="gray.900" fontFamily="'Playfair Display', serif" fontWeight="700" textTransform="uppercase" letterSpacing="0.05em" fontSize="xs" py={4} whiteSpace="nowrap">City</Th>
                       <Th color="gray.900" fontFamily="'Playfair Display', serif" fontWeight="700" textTransform="uppercase" letterSpacing="0.05em" fontSize="xs" py={4} whiteSpace="nowrap">Status</Th>
+                      <Th color="gray.900" fontFamily="'Playfair Display', serif" fontWeight="700" textTransform="uppercase" letterSpacing="0.05em" fontSize="xs" py={4} whiteSpace="nowrap">Featured</Th>
                       <Th color="gray.900" fontFamily="'Playfair Display', serif" fontWeight="700" textTransform="uppercase" letterSpacing="0.05em" fontSize="xs" py={4} whiteSpace="nowrap">Actions</Th>
                     </Tr>
                   </Thead>
@@ -352,6 +397,14 @@ const ManageListingsPage = () => {
                           >
                             {property.status || 'active'}
                           </Badge>
+                        </Td>
+                        <Td py={4}>
+                          <Switch
+                            isChecked={property.featured || false}
+                            onChange={() => handleToggleFeatured(property.id, property.featured || false)}
+                            colorScheme="warm"
+                            size="md"
+                          />
                         </Td>
                         <Td py={4}>
                           <HStack spacing={2}>

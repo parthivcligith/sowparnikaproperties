@@ -41,8 +41,8 @@ const NavigationMovbile = () => {
               objectFit="contain"
               loading="eager"
             />
-            <Text fontSize="lg" fontWeight="bold" color="blue.900" display={{ base: 'none', sm: 'block' }} fontFamily="'Playfair Display', serif">
-              Sowparnika Properties
+            <Text fontSize="lg" fontWeight="bold" color="blue.900" display={{ base: 'none', sm: 'block' }} fontFamily="'Playfair Display', serif" as="span">
+              <Box as="span" sx={{ fontSize: '1.25em', display: 'inline-block' }}>S</Box>owparnika <Box as="span" sx={{ fontSize: '1.25em', display: 'inline-block' }}>P</Box>roperties
             </Text>
           </Box>
         </Link>
@@ -54,7 +54,9 @@ const NavigationMovbile = () => {
             variant="outline"
           />
           <MenuList>
-            {navigationLinks.map((item) => (
+            {navigationLinks
+              .filter((item) => !item.requiresAuth || (mounted && isAuthenticated))
+              .map((item) => (
               <NavigationLinks
                 key={item.title}
                 link={item.link}

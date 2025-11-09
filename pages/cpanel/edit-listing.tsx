@@ -43,7 +43,7 @@ const ReactQuill = dynamic(() => import('react-quill'), { ssr: false });
 import 'react-quill/dist/quill.snow.css';
 
 const EditListingPage = () => {
-  const { isAuthenticated, isLoading } = useAuth();
+  const { isAuthenticated, isLoading, isAdmin } = useAuth();
   const router = useRouter();
   const { id } = router.query;
   const toast = useToast();
@@ -100,10 +100,10 @@ const EditListingPage = () => {
   ];
 
   useEffect(() => {
-    if (!isLoading && !isAuthenticated) {
-      router.push('/login');
+    if (!isLoading && (!isAuthenticated || !isAdmin)) {
+      router.push('/login?returnUrl=/cpanel/edit-listing');
     }
-  }, [isAuthenticated, isLoading, router]);
+  }, [isAuthenticated, isLoading, isAdmin, router]);
 
   const fetchProperty = React.useCallback(async () => {
     if (!id) return;
@@ -293,7 +293,7 @@ const EditListingPage = () => {
     );
   }
 
-  if (!isAuthenticated) {
+  if (!isAuthenticated || !isAdmin) {
     return null;
   }
 

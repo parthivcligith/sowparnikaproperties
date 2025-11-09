@@ -5,6 +5,7 @@ import { useEffect, useState } from 'react';
 import NProgress from 'nprogress';
 import Head from 'next/head';
 import { AuthProvider } from '@/contexts/AuthContext';
+import { FavoritesProvider } from '@/contexts/FavoritesContext';
 import theme from '@/lib/theme';
 import Preloader from '@/components/Preloader/Preloader';
 import '@/styles/globals.css';
@@ -42,8 +43,10 @@ export default function App({ Component, pageProps }: AppProps) {
   return (
     <ChakraProvider theme={theme}>
       <AuthProvider>
-        {isLoading && <Preloader onComplete={handlePreloaderComplete} />}
-        {!isLoading && <Component {...pageProps} />}
+        <FavoritesProvider>
+          {isLoading && <Preloader onComplete={handlePreloaderComplete} />}
+          {!isLoading && <Component {...pageProps} />}
+        </FavoritesProvider>
       </AuthProvider>
     </ChakraProvider>
   );
