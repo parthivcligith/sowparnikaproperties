@@ -16,7 +16,7 @@ const NavigationDesktop = () => {
     <Box
       color="blue.600"
       paddingY="2rem"
-      paddingX="3rem"
+      paddingX={{ base: '2rem', md: '2.5rem', lg: '3rem' }}
       backgroundColor="white"
       display={{ base: 'none', md: 'block' }}
     >
@@ -38,7 +38,7 @@ const NavigationDesktop = () => {
               </Text>
             </Box>
           </Link>
-          <Flex gap='12' alignItems='center' fontWeight='medium'>
+          <Flex gap={{ base: '6', md: '8', lg: '12' }} alignItems='center' fontWeight='medium' flexWrap="wrap">
             {navigationLinks
               .filter((item) => !item.requiresAuth || (mounted && isAuthenticated))
               .map((item) => (

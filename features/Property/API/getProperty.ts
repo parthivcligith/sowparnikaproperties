@@ -1,4 +1,4 @@
-import { supabase } from '@/lib/supabase';
+import { createServerSupabaseClient, PROPERTY_SELECT_COLUMNS } from '@/lib/supabase-server';
 
 export const getProperty = async (id: string | string[]) => {
   try {
@@ -7,10 +7,13 @@ export const getProperty = async (id: string | string[]) => {
       throw new Error('Database not configured');
     }
 
-    // Fetch property from Supabase by ID
+    // Use server-side Supabase client
+    const supabase = createServerSupabaseClient();
+
+    // Fetch property from Supabase by ID - only select required columns
     const { data, error } = await supabase
       .from('properties')
-      .select('*')
+      .select(PROPERTY_SELECT_COLUMNS)
       .eq('id', id)
       .single();
 

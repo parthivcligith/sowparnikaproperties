@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { memo } from 'react';
 import { usePropertyFormat } from '@/features/common/Hooks/usePropertyFormat';
 import { Badge, Box, Flex, HStack, Text, IconButton } from '@chakra-ui/react';
 import { TbBed, TbBath, TbRuler } from 'react-icons/tb';
@@ -10,12 +10,13 @@ import { useFavorites } from '@/contexts/FavoritesContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@chakra-ui/react';
 import { FiShare2 } from 'react-icons/fi';
+import OptimizedImage from '@/components/OptimizedImage/OptimizedImage';
 
 import 'swiper/css';
 import 'swiper/css/navigation';
 import 'swiper/css/pagination';
 
-const PropertyCard = (property: Object) => {
+const PropertyCard = memo((property: Object) => {
   const { isAuthenticated, isAdmin } = useAuth();
   const { isFavorite, toggleFavorite } = useFavorites();
   const toast = useToast();
@@ -153,7 +154,7 @@ const PropertyCard = (property: Object) => {
         {/* Image Container - Fixed Height for Consistent Sizing */}
         <Box
           width="100%"
-          height={{ base: '250px', sm: '280px', md: '300px' }}
+          height={{ base: '250px', sm: '280px', md: '320px', lg: '340px' }}
           position="relative"
           backgroundColor="gray.200"
           overflow="hidden"
@@ -225,19 +226,23 @@ const PropertyCard = (property: Object) => {
               navigation={hasMultipleImages}
               pagination={hasMultipleImages ? { clickable: true, dynamicBullets: true } : false}
               className="property-card-swiper"
-              loop={hasMultipleImages && validImages.length > 1}
+              loop={false}
               spaceBetween={0}
             >
               {validImages.map((image: string, index: number) => (
                 <SwiperSlide key={`${image}-${index}`}>
-                  <Box
-                    as="img"
+                  <OptimizedImage
                     src={image}
                     alt={`${title || 'Property'} - Image ${index + 1}`}
-                    loading={index === 0 ? 'eager' : 'lazy'}
-                    decoding="async"
+                    width={800}
+                    height={600}
+                    priority={index === 0}
+                    quality={index === 0 ? 85 : 75}
+                    breakpoint="card"
+                    fill
+                    objectFit="cover"
                     onError={(e) => {
-                      (e.target as HTMLImageElement).src = 'https://placehold.co/800x800/e2e8f0/64748b?text=Image+Not+Available';
+                      console.error('Image failed to load:', image);
                     }}
                   />
                 </SwiperSlide>
@@ -395,6 +400,28 @@ const PropertyCard = (property: Object) => {
       </Link>
     </Box>
   );
-};
+}, (prevProps, nextProps) => {
+  // Custom comparison function for memo
+  const prev = prevProps as any;
+  const next = nextProps as any;
+  
+  // Compare by ID
+  const prevId = prev.id || prev.externalID;
+  const nextId = next.id || next.externalID;
+  
+  if (prevId !== nextId) return false;
+  
+  // Compare featured status
+  if (prev.featured !== next.featured) return false;
+  
+  // Compare images array length
+  const prevImages = Array.isArray(prev.images) ? prev.images : [];
+  const nextImages = Array.isArray(next.images) ? next.images : [];
+  if (prevImages.length !== nextImages.length) return false;
+  
+  return true;
+});
+
+PropertyCard.displayName = 'PropertyCard';
 
 export default PropertyCard;

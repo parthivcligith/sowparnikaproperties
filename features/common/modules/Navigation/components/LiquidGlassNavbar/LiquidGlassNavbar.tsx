@@ -113,13 +113,13 @@ const LiquidGlassNavbar = () => {
         >
           <Box
             paddingY="0.75rem"
-            paddingX={{ base: '1.5rem', md: '3rem' }}
+            paddingX={{ base: '1.5rem', md: '2.5rem', lg: '3rem' }}
             position="relative"
           >
           <Flex alignItems="center" justifyContent="space-between" gap={4}>
             {/* Left Side: Hamburger Menu (Mobile) / Hamburger + Logo (Desktop) */}
             <HStack 
-              gap={{ base: '0', md: '8' }} 
+              gap={{ base: '0', md: '4', lg: '8' }} 
               alignItems="center" 
               flexShrink={0}
               w={{ base: '40px', md: 'auto' }}
@@ -137,13 +137,14 @@ const LiquidGlassNavbar = () => {
               <Box display={{ base: 'none', md: 'block' }}>
                 <Link href="/">
                   <Text
-                    fontSize={{ base: '1rem', md: '1.2rem' }}
+                    fontSize={{ base: '1rem', md: '1rem', lg: '1.2rem' }}
                     fontWeight="700"
                     color={isScrolledPastHero ? 'gray.900' : 'white'}
                     fontFamily="'Playfair Display', serif"
-                    letterSpacing="0.05em"
+                    letterSpacing={{ base: '0.03em', md: '0.04em', lg: '0.05em' }}
                     lineHeight="1.1"
                     textTransform="uppercase"
+                    whiteSpace="nowrap"
                     sx={{
                       textShadow: isScrolledPastHero ? 'none' : '0 2px 8px rgba(0, 0, 0, 0.3)',
                       fontFeatureSettings: '"liga" 1, "kern" 1',
@@ -171,8 +172,8 @@ const LiquidGlassNavbar = () => {
               display="flex" 
               justifyContent="center" 
               alignItems="center"
-              maxW={{ base: 'calc(100% - 80px)', md: '400px', lg: '500px' }}
-              width={{ base: 'auto', md: '400px', lg: '500px' }}
+              maxW={{ base: 'calc(100% - 80px)', md: '350px', lg: '400px', xl: '500px' }}
+              width={{ base: 'auto', md: '350px', lg: '400px', xl: '500px' }}
             >
               {/* Mobile: Logo */}
               <Box 
@@ -208,8 +209,8 @@ const LiquidGlassNavbar = () => {
                   </Text>
                 </Link>
               </Box>
-              {/* Desktop: Search Bar */}
-              <Box display={{ base: 'none', md: 'block' }} width="100%">
+              {/* Desktop: Search Bar - Hide on iPad, show on larger screens */}
+              <Box display={{ base: 'none', lg: 'block' }} width="100%">
                 <form onSubmit={handleSearch}>
                   <InputGroup size="md">
                     <InputLeftElement pointerEvents="none">
@@ -247,12 +248,13 @@ const LiquidGlassNavbar = () => {
               justifyContent="flex-end"
             >
               <HStack
-                gap={{ base: '4', md: '8' }}
+                gap={{ base: '4', md: '4', lg: '6', xl: '8' }}
                 alignItems="center"
                 fontWeight="medium"
                 color={isScrolledPastHero ? 'gray.900' : 'white'}
                 display={{ base: 'none', md: 'flex' }}
                 flexShrink={0}
+                flexWrap="wrap"
                 sx={{
                   textShadow: isScrolledPastHero ? 'none' : '0 2px 8px rgba(0, 0, 0, 0.3)',
                 }}
@@ -270,10 +272,11 @@ const LiquidGlassNavbar = () => {
                       transition="all 0.2s"
                       cursor="pointer"
                       fontWeight="600"
-                      fontSize="sm"
+                      fontSize={{ base: 'xs', md: 'xs', lg: 'sm' }}
                       fontFamily="'Playfair Display', serif"
                       color={isScrolledPastHero ? 'gray.900' : 'white'}
                       position="relative"
+                      whiteSpace="nowrap"
                       _after={{
                         content: '""',
                         position: 'absolute',
@@ -296,10 +299,12 @@ const LiquidGlassNavbar = () => {
                 ))}
                 {mounted && !isLoading && isAuthenticated && user && (
                   <Text
-                    fontSize="sm"
+                    fontSize={{ base: 'xs', md: 'xs', lg: 'sm' }}
                     fontFamily="'Playfair Display', serif"
                     fontWeight="600"
                     color={isScrolledPastHero ? 'gray.900' : 'white'}
+                    whiteSpace="nowrap"
+                    display={{ base: 'none', lg: 'block' }}
                     sx={{
                       textShadow: isScrolledPastHero ? 'none' : '0 2px 8px rgba(0, 0, 0, 0.3)',
                     }}
@@ -313,12 +318,13 @@ const LiquidGlassNavbar = () => {
                       size="sm"
                       variant="outline"
                       borderRadius="full"
-                      px={6}
-                      fontSize="sm"
+                      px={{ base: 4, md: 5, lg: 6 }}
+                      fontSize={{ base: 'xs', md: 'xs', lg: 'sm' }}
                       fontFamily="'Playfair Display', serif"
                       fontWeight="600"
                       color={isScrolledPastHero ? 'luxury.700' : 'white'}
                       borderColor={isScrolledPastHero ? 'luxury.700' : 'white'}
+                      whiteSpace="nowrap"
                       _hover={{
                         bg: isScrolledPastHero ? 'luxury.50' : 'rgba(255, 255, 255, 0.2)',
                         borderColor: isScrolledPastHero ? 'luxury.800' : 'white',
@@ -364,7 +370,7 @@ const LiquidGlassNavbar = () => {
         >
           <Box
             paddingY={{ base: '0.4rem', md: '0.75rem' }}
-            paddingX={{ base: '1rem', md: '3rem' }}
+            paddingX={{ base: '1rem', md: '2rem', lg: '3rem' }}
           >
             <Flex alignItems="center" justifyContent="space-between" gap={4}>
               <Box
@@ -379,7 +385,7 @@ const LiquidGlassNavbar = () => {
                 }}
               >
                 <HStack
-                  gap={{ base: 4, md: 6 }}
+                  gap={{ base: 4, md: 4, lg: 6 }}
                   justifyContent="flex-start"
                   minW="max-content"
                   color={isScrolledPastHero ? 'gray.900' : 'white'}
@@ -398,7 +404,7 @@ const LiquidGlassNavbar = () => {
                         transition="all 0.2s"
                         cursor="pointer"
                         fontWeight="500"
-                        fontSize={{ base: 'xs', md: 'sm' }}
+                        fontSize={{ base: 'xs', md: 'xs', lg: 'sm' }}
                         fontFamily="'Playfair Display', serif"
                         whiteSpace="nowrap"
                         color={isScrolledPastHero ? 'gray.900' : 'white'}
@@ -426,46 +432,22 @@ const LiquidGlassNavbar = () => {
                   ))}
                 </HStack>
               </Box>
-              <HStack spacing={3} display={{ base: 'none', md: 'flex' }}>
-                {mounted && !isLoading && isAuthenticated && (
-                  <Link href="/cpanel">
-                    <Button
-                      size="sm"
-                      bg={isScrolledPastHero ? 'luxury.700' : 'white'}
-                      color={isScrolledPastHero ? 'white' : 'luxury.700'}
-                      borderRadius="full"
-                      px={6}
-                      fontSize="sm"
-                      fontFamily="'Playfair Display', serif"
-                      fontWeight="600"
-                      _hover={{
-                        bg: isScrolledPastHero ? 'luxury.800' : 'luxury.50',
-                        color: isScrolledPastHero ? 'white' : 'luxury.800',
-                        transform: 'scale(1.05)',
-                        boxShadow: '0 4px 12px rgba(3, 105, 161, 0.2)',
-                      }}
-                      transition="all 0.3s ease"
-                      whiteSpace="nowrap"
-                    >
-                      CPANEL
-                    </Button>
-                  </Link>
-                )}
+              <HStack spacing={{ base: 2, md: 2, lg: 3 }} display={{ base: 'none', lg: 'flex' }}>
                 <Link href="/submit-listing">
                   <Button
                     size="sm"
                     variant="accent"
                     borderRadius="full"
-                    px={6}
-                    fontSize="sm"
+                    px={{ base: 4, md: 5, lg: 6 }}
+                    fontSize={{ base: 'xs', md: 'xs', lg: 'sm' }}
                     fontFamily="'Playfair Display', serif"
                     fontWeight="600"
+                    whiteSpace="nowrap"
                     _hover={{
                       transform: 'scale(1.05)',
                       boxShadow: '0 4px 12px rgba(245, 158, 11, 0.3)',
                     }}
                     transition="all 0.3s ease"
-                    whiteSpace="nowrap"
                   >
                     Sell With Us
                   </Button>

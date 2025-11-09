@@ -8,6 +8,7 @@ import { AuthProvider } from '@/contexts/AuthContext';
 import { FavoritesProvider } from '@/contexts/FavoritesContext';
 import theme from '@/lib/theme';
 import Preloader from '@/components/Preloader/Preloader';
+import ErrorBoundary from '@/components/ErrorBoundary/ErrorBoundary';
 import '@/styles/globals.css';
 
 export default function App({ Component, pageProps }: AppProps) {
@@ -23,17 +24,27 @@ export default function App({ Component, pageProps }: AppProps) {
       speed: 400,
     });
 
-    Router.events.on('routeChangeStart', () => {
+    const handleRouteChangeStart = () => {
       NProgress.start();
-    });
+    };
 
-    Router.events.on('routeChangeComplete', () => {
+    const handleRouteChangeComplete = () => {
       NProgress.done(false);
-    });
+    };
 
-    Router.events.on('routeChangeError', () => {
+    const handleRouteChangeError = () => {
       NProgress.done(false);
-    });
+    };
+
+    Router.events.on('routeChangeStart', handleRouteChangeStart);
+    Router.events.on('routeChangeComplete', handleRouteChangeComplete);
+    Router.events.on('routeChangeError', handleRouteChangeError);
+
+    return () => {
+      Router.events.off('routeChangeStart', handleRouteChangeStart);
+      Router.events.off('routeChangeComplete', handleRouteChangeComplete);
+      Router.events.off('routeChangeError', handleRouteChangeError);
+    };
   }, []);
 
   const handlePreloaderComplete = () => {
@@ -41,13 +52,15 @@ export default function App({ Component, pageProps }: AppProps) {
   };
 
   return (
-    <ChakraProvider theme={theme}>
-      <AuthProvider>
-        <FavoritesProvider>
-          {isLoading && <Preloader onComplete={handlePreloaderComplete} />}
-          {!isLoading && <Component {...pageProps} />}
-        </FavoritesProvider>
-      </AuthProvider>
-    </ChakraProvider>
+    <ErrorBoundary>
+      <ChakraProvider theme={theme}>
+        <AuthProvider>
+          <FavoritesProvider>
+            {isLoading && <Preloader onComplete={handlePreloaderComplete} />}
+            {!isLoading && <Component {...pageProps} />}
+          </FavoritesProvider>
+        </AuthProvider>
+      </ChakraProvider>
+    </ErrorBoundary>
   );
 }

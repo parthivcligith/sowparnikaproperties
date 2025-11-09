@@ -175,7 +175,8 @@ const Footer = () => {
           templateColumns={{
             base: '1fr',
             md: 'repeat(2, 1fr)',
-            lg: '2fr 1fr 1fr 1.5fr'
+            lg: 'repeat(3, 1fr)',
+            xl: '2fr 1fr 1fr 1.5fr'
           }}
           gap={{ base: '2.5rem', md: '3rem', lg: '4rem' }}
           mb={{ base: '2rem', md: '2.5rem' }}

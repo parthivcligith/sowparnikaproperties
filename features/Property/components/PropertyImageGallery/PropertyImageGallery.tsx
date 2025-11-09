@@ -3,6 +3,7 @@ import { Box, IconButton, Button, Grid, GridItem } from '@chakra-ui/react';
 import { FiShare2, FiHeart, FiGrid } from 'react-icons/fi';
 import { useRouter } from 'next/router';
 import PropertyImageLightbox from '@/features/Property/components/PropertyImageLightbox/PropertyImageLightbox';
+import OptimizedImage from '@/components/OptimizedImage/OptimizedImage';
 
 interface PropertyImageGalleryProps {
   photos: string[];
@@ -69,17 +70,18 @@ const PropertyImageGallery: React.FC<PropertyImageGalleryProps> = ({ photos, pro
             _hover={{ opacity: 0.95 }}
             transition="opacity 0.2s"
           >
-            <Box
-              as="img"
+            <OptimizedImage
               src={mainImage}
               alt="Main property image"
-              width="100%"
-              height="100%"
+              width={1200}
+              height={800}
+              priority={true}
+              quality={90}
+              breakpoint="gallery"
+              fill
               objectFit="cover"
-              loading="eager"
-              decoding="async"
               onError={(e) => {
-                (e.target as HTMLImageElement).src = 'https://placehold.co/800x600/e2e8f0/64748b?text=Image+Error';
+                console.error('Main image failed to load:', mainImage);
               }}
             />
           </Box>
@@ -107,17 +109,18 @@ const PropertyImageGallery: React.FC<PropertyImageGalleryProps> = ({ photos, pro
                 }}
                 _hover={{ opacity: 0.9 }}
               >
-                <Box
-                  as="img"
+                <OptimizedImage
                   src={photo}
                   alt={`Thumbnail ${index + 1}`}
-                  width="100%"
-                  height="100%"
+                  width={400}
+                  height={300}
+                  priority={index === 0}
+                  quality={75}
+                  breakpoint="thumbnail"
+                  fill
                   objectFit="cover"
-                  loading="lazy"
-                  decoding="async"
                   onError={(e) => {
-                    (e.target as HTMLImageElement).src = 'https://placehold.co/400x300/e2e8f0/64748b?text=Image';
+                    console.error('Thumbnail failed to load:', photo);
                   }}
                 />
                 {/* Overlay buttons for top right images */}

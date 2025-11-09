@@ -71,18 +71,19 @@ const HeroSection = () => {
   };
 
   return (
-    <Box
-      position="relative"
-      h="75vh"
-      minH="75vh"
-      pt="80px"
-      display="flex"
-      alignItems="center"
-      justifyContent="center"
-      borderBottomLeftRadius="2xl"
-      borderBottomRightRadius="2xl"
-      overflow="hidden"
-    >
+      <Box
+        position="relative"
+        h={{ base: '70vh', md: '75vh', lg: '80vh' }}
+        minH={{ base: '500px', md: '600px', lg: '650px' }}
+        maxH={{ base: '700px', md: '800px', lg: '900px' }}
+        pt={{ base: '70px', md: '80px', lg: '90px' }}
+        display="flex"
+        alignItems="center"
+        justifyContent="center"
+        borderBottomLeftRadius="2xl"
+        borderBottomRightRadius="2xl"
+        overflow="hidden"
+      >
       {/* Background Carousel */}
       <Box
         position="absolute"
@@ -159,15 +160,22 @@ const HeroSection = () => {
           <VStack spacing={4} w="100%">
             <Heading
               fontWeight="700"
-              fontSize={{ base: '3xl', md: '5xl', lg: '6xl' }}
+              fontSize={{ base: '3xl', md: '4xl', lg: '5xl', xl: '6xl' }}
               lineHeight="shorter"
               fontFamily="'Playfair Display', serif"
               letterSpacing="-0.02em"
               color="white"
+              px={{ base: 4, md: 6, lg: 8 }}
             >
               Explore Kerala's Most Exquisite Luxury Properties
             </Heading>
-            <Text fontSize={{ base: 'md', md: 'lg', lg: 'xl' }} maxW="800px" opacity={0.9} color="white">
+            <Text 
+              fontSize={{ base: 'md', md: 'lg', lg: 'xl' }} 
+              maxW={{ base: '90%', md: '800px', lg: '900px' }} 
+              opacity={0.9} 
+              color="white"
+              px={{ base: 4, md: 6, lg: 8 }}
+            >
               Discover luxury homes, mansions, and villas for sale in Kerala in one simple search
             </Text>
           </VStack>
@@ -175,15 +183,16 @@ const HeroSection = () => {
           {/* Search Bar */}
           <Box
             w="100%"
-            maxW="1100px"
+            maxW={{ base: '100%', md: '900px', lg: '1100px' }}
             mx="auto"
             bg="rgba(250, 248, 245, 0.95)"
             backdropFilter="blur(24px) saturate(200%)"
             borderRadius="full"
-            p={1.5}
+            p={{ base: 1, md: 1.5, lg: 2 }}
             boxShadow="0 20px 60px rgba(0, 0, 0, 0.12), 0 8px 24px rgba(0, 0, 0, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.9)"
             border="1px solid rgba(220, 215, 210, 0.6)"
             position="relative"
+            px={{ base: 2, md: 4, lg: 6 }}
             sx={{
               '@media (max-width: 767px)': {
                 p: '1px',
@@ -206,7 +215,7 @@ const HeroSection = () => {
               direction="row"
               align="center"
               gap={0}
-              h={{ base: '40px', md: '44px' }}
+              h={{ base: '40px', md: '48px', lg: '52px' }}
               w="100%"
               overflow="hidden"
             >
@@ -214,8 +223,8 @@ const HeroSection = () => {
               <HStack 
                 flex={{ base: '1 1 0', md: '1 1 0' }}
                 minW={0}
-                spacing={{ base: 2, md: 3.5 }}
-                px={{ base: 3, md: 5 }}
+                spacing={{ base: 2, md: 3.5, lg: 4 }}
+                px={{ base: 3, md: 4, lg: 5 }}
                 h="full"
                 borderRight="1px solid rgba(0, 0, 0, 0.06)"
                 flexShrink={1}
@@ -252,8 +261,8 @@ const HeroSection = () => {
               <Box 
                 position="relative"
                 borderRight="1px solid rgba(0, 0, 0, 0.06)"
-                minW={{ base: '80px', md: '200px' }}
-                maxW={{ base: '100px', md: '200px' }}
+                minW={{ base: '80px', md: '180px', lg: '200px' }}
+                maxW={{ base: '100px', md: '180px', lg: '200px' }}
                 w={{ base: '80px', md: 'auto' }}
                 h="full"
                 flexShrink={0}
@@ -296,8 +305,8 @@ const HeroSection = () => {
               <Box 
                 position="relative"
                 borderRight="1px solid rgba(0, 0, 0, 0.06)"
-                minW={{ base: '75px', md: '160px' }}
-                maxW={{ base: '90px', md: '160px' }}
+                minW={{ base: '75px', md: '150px', lg: '160px' }}
+                maxW={{ base: '90px', md: '150px', lg: '160px' }}
                 w={{ base: '75px', md: 'auto' }}
                 h="full"
                 flexShrink={0}
@@ -349,7 +358,7 @@ const HeroSection = () => {
               <Button
                 bg="linear-gradient(135deg, #14b8a6 0%, #0d9488 100%)"
                 color="white"
-                px={{ base: 4, md: 10 }}
+                px={{ base: 4, md: 8, lg: 10 }}
                 h="full"
                 borderRadius="full"
                 onClick={handleSearch}
@@ -363,14 +372,14 @@ const HeroSection = () => {
                 }}
                 transition="all 0.3s cubic-bezier(0.4, 0, 0.2, 1)"
                 fontWeight="600"
-                ml={{ base: 2, md: 3 }}
+                ml={{ base: 2, md: 3, lg: 4 }}
                 flexShrink={0}
-                fontSize={{ base: '13px', md: '15px' }}
+                fontSize={{ base: '13px', md: '15px', lg: '16px' }}
                 fontFamily="'Playfair Display', serif"
                 letterSpacing="0.02em"
                 boxShadow="0 4px 12px rgba(20, 184, 166, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.2)"
                 textTransform="none"
-                minW={{ base: '80px', md: '140px' }}
+                minW={{ base: '80px', md: '130px', lg: '140px' }}
               >
                 Search
               </Button>

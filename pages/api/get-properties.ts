@@ -1,5 +1,5 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
-import { supabase } from '@/lib/supabase';
+import { createServerSupabaseClient, PROPERTY_SELECT_COLUMNS } from '@/lib/supabase-server';
 
 export default async function handler(
   req: NextApiRequest,
@@ -9,6 +9,13 @@ export default async function handler(
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+
+  // Set cache headers for performance (ISR-like caching)
+  // Cache for 60 seconds, allow stale-while-revalidate for 5 minutes
+  res.setHeader(
+    'Cache-Control',
+    'public, s-maxage=60, stale-while-revalidate=300, max-age=60'
+  );
 
   // Handle preflight request
   if (req.method === 'OPTIONS') {
@@ -31,6 +38,9 @@ export default async function handler(
         message: 'Database not configured',
       });
     }
+
+    // Use server-side Supabase client
+    const supabase = createServerSupabaseClient();
 
     const {
       search,
@@ -62,7 +72,8 @@ export default async function handler(
       });
     }
 
-    let query = supabase.from('properties').select('*', { count: 'exact' });
+    // Use optimized column selection instead of select('*')
+    let query = supabase.from('properties').select(PROPERTY_SELECT_COLUMNS, { count: 'exact' });
     
     // Note: properties table no longer has request_status column
     // All approved requests are moved to properties table and all pending/rejected are in property_requests table
@@ -244,9 +255,9 @@ export default async function handler(
     const order = sortOrder === 'asc' ? 'asc' : 'desc';
     query = query.order(sortField, { ascending: order === 'asc' });
 
-    // Pagination
-    const pageNum = parseInt(page as string) || 1;
-    const limitNum = parseInt(limit as string) || 20;
+    // Pagination - Limit max to 100 per page for performance
+    const pageNum = Math.max(1, parseInt(page as string) || 1);
+    const limitNum = Math.min(100, Math.max(1, parseInt(limit as string) || 20));
     const from = (pageNum - 1) * limitNum;
     const to = from + limitNum - 1;
     query = query.range(from, to);

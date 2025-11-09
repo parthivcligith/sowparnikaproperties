@@ -455,7 +455,7 @@ const Properties = () => {
           {/* Search and Filter Bar */}
           <Box
             bg="white"
-            p={{ base: 5, md: 8 }}
+            p={{ base: 5, md: 6, lg: 8 }}
             borderRadius="2xl"
             boxShadow="0 4px 20px rgba(0, 0, 0, 0.08), 0 1px 3px rgba(0, 0, 0, 0.05)"
             mb={8}
@@ -537,7 +537,7 @@ const Properties = () => {
               </Box>
 
               {/* Quick Filters */}
-              <SimpleGrid columns={{ base: 1, md: 2, lg: 4 }} spacing={4}>
+              <SimpleGrid columns={{ base: 1, md: 2, lg: 3, xl: 4 }} spacing={{ base: 4, md: 5, lg: 6 }}>
                 <Box>
                   <Text 
                     fontSize="xs" 
@@ -847,8 +847,9 @@ const Properties = () => {
               display="grid"
               gridTemplateColumns={{
                 base: '1fr',
-                sm: 'repeat(2, 1fr)',
+                md: 'repeat(2, 1fr)',
                 lg: 'repeat(3, 1fr)',
+                xl: 'repeat(4, 1fr)',
               }}
               gap={4}
               width="100%"

@@ -122,7 +122,7 @@ const PopularSearches: React.FC = () => {
         </HStack>
 
         {/* Category Cards Grid */}
-        <SimpleGrid columns={{ base: 1, sm: 2, lg: 3 }} spacing={6} mb={12}>
+        <SimpleGrid columns={{ base: 1, sm: 2, md: 2, lg: 3 }} spacing={{ base: 4, md: 5, lg: 6 }} mb={12}>
           {displayedCategories.map((category) => {
             // Special handling: Plot/Land should show both Plot and Land
             // Using 'Plot' as the propertyType, API will handle showing both Plot and Land
