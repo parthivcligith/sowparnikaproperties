@@ -56,6 +56,7 @@ const CreateListingPage = () => {
     propertyType: '',
     bhk: '',
     baths: '',
+    floors: '',
     sellingType: 'Sale',
     price: '',
     areaSize: '',
@@ -70,7 +71,14 @@ const CreateListingPage = () => {
 
   // Property types that don't require bedrooms/bathrooms
   const landPropertyTypes = ['plot', 'land', 'commercial land'];
-  const showBedroomsBathrooms = formData.propertyType && !landPropertyTypes.includes(formData.propertyType.toLowerCase());
+  const commercialPropertyTypes = ['warehouse', 'commercial building'];
+  const showBedroomsBathrooms = formData.propertyType && 
+    !landPropertyTypes.includes(formData.propertyType.toLowerCase()) &&
+    !commercialPropertyTypes.includes(formData.propertyType.toLowerCase());
+  
+  // Show floors field only for Commercial Building
+  const showFloors = formData.propertyType && 
+    formData.propertyType.toLowerCase() === 'commercial building';
 
   const [amenities, setAmenities] = useState<string[]>([]);
   const [images, setImages] = useState<File[]>([]);
@@ -107,7 +115,19 @@ const CreateListingPage = () => {
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>
   ) => {
     const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
+    
+    // If property type changes, clear BHK, baths, and floors to prevent stale data
+    if (name === 'propertyType') {
+      setFormData((prev) => ({ 
+        ...prev, 
+        [name]: value,
+        bhk: '',
+        baths: '',
+        floors: '',
+      }));
+    } else {
+      setFormData((prev) => ({ ...prev, [name]: value }));
+    }
   };
 
   const handleContentChange = (value: string) => {
@@ -168,9 +188,11 @@ const CreateListingPage = () => {
           ...formData,
           amenities: showBedroomsBathrooms ? amenities : [],
           images: imageUrls,
-          // Clear BHK and baths for land types
+          // Clear BHK and baths for land types and commercial types
           bhk: showBedroomsBathrooms ? formData.bhk : '',
           baths: showBedroomsBathrooms ? formData.baths : '',
+          // Only include floors for Commercial Building
+          floors: showFloors ? formData.floors : '',
         }),
       });
 
@@ -427,6 +449,40 @@ const CreateListingPage = () => {
                             </Select>
                           </FormControl>
                         </>
+                      )}
+
+                      {showFloors && (
+                        <FormControl isRequired>
+                          <FormLabel color="gray.900" fontWeight="600" fontSize="sm" letterSpacing="0.05em" textTransform="uppercase">
+                            Number of Floors
+                          </FormLabel>
+                          <Select
+                            name="floors"
+                            value={formData.floors}
+                            onChange={handleInputChange}
+                            bg="white"
+                            borderColor="gray.300"
+                            color="gray.900"
+                            borderRadius="0"
+                            _focus={{
+                              borderColor: 'gray.900',
+                              boxShadow: '0 0 0 1px gray.900',
+                            }}
+                          >
+                            <option value="">Select Floors</option>
+                            <option value="1">1 Floor</option>
+                            <option value="2">2 Floors</option>
+                            <option value="3">3 Floors</option>
+                            <option value="4">4 Floors</option>
+                            <option value="5">5 Floors</option>
+                            <option value="6">6 Floors</option>
+                            <option value="7">7 Floors</option>
+                            <option value="8">8 Floors</option>
+                            <option value="9">9 Floors</option>
+                            <option value="10">10 Floors</option>
+                            <option value="10+">10+ Floors</option>
+                          </Select>
+                        </FormControl>
                       )}
 
                       <FormControl isRequired>
@@ -695,29 +751,38 @@ const CreateListingPage = () => {
                       Amenities
                     </Heading>
                     <SimpleGrid columns={{ base: 1, sm: 2, md: 3 }} spacing={4}>
-                      {amenityOptions.map((amenity) => (
-                        <Checkbox
-                          key={amenity}
-                          isChecked={amenities.includes(amenity)}
-                          onChange={() => handleAmenityChange(amenity)}
-                          colorScheme="gray"
-                          borderColor="gray.300"
-                          _checked={{
-                            bg: 'gray.900',
-                            borderColor: 'gray.900',
-                            color: 'white',
-                          }}
-                          color="gray.900"
-                        >
-                          <Text
-                            fontSize="sm"
-                            fontFamily="'Playfair Display', serif"
-                            color="gray.900"
-                          >
-                            {amenity}
-                          </Text>
-                        </Checkbox>
-                      ))}
+                      {amenityOptions.map((amenity) => {
+                        const isChecked = amenities.includes(amenity);
+                        return (
+                          <Flex key={amenity} align="center" gap={3}>
+                            <Checkbox
+                              isChecked={isChecked}
+                              onChange={() => handleAmenityChange(amenity)}
+                              size="md"
+                              borderColor={isChecked ? 'gray.900' : 'gray.400'}
+                              _checked={{
+                                bg: 'gray.900',
+                                borderColor: 'gray.900',
+                                color: 'white',
+                              }}
+                              _hover={{
+                                borderColor: 'gray.900',
+                              }}
+                              flexShrink={0}
+                            />
+                            <Text
+                              fontSize="sm"
+                              fontFamily="'Playfair Display', serif"
+                              color="gray.900"
+                              cursor="pointer"
+                              onClick={() => handleAmenityChange(amenity)}
+                              userSelect="none"
+                            >
+                              {amenity}
+                            </Text>
+                          </Flex>
+                        );
+                      })}
                     </SimpleGrid>
                   </Box>
                 )}

@@ -47,25 +47,148 @@ export default async function handler(
       limit = '20',
     } = req.query;
 
+    // Debug logging
+    if (process.env.NODE_ENV === 'development') {
+      console.log('API received query params:', {
+        search,
+        propertyType,
+        sellingType,
+        city,
+        bhk,
+        status,
+        sortBy,
+        sortOrder,
+      });
+    }
+
     let query = supabase.from('properties').select('*', { count: 'exact' });
     
     // Note: properties table no longer has request_status column
     // All approved requests are moved to properties table and all pending/rejected are in property_requests table
     // So we don't need to filter by request_status here
 
+    // Helper function to check if search term is about plot/land
+    const isPlotOrLandSearch = (searchTerm: string): boolean => {
+      const normalized = searchTerm.toLowerCase().trim();
+      // Check if it contains "plot" or "land" but not "commercial land"
+      const hasPlot = normalized.includes('plot');
+      const hasLand = normalized.includes('land');
+      const hasCommercialLand = normalized.includes('commercial land');
+      
+      return (hasPlot || hasLand) && !hasCommercialLand;
+    };
+
+    // Helper function to check if search is exactly "plot" or "land"
+    const isExactPlotOrLand = (searchTerm: string): boolean => {
+      const normalized = searchTerm.toLowerCase().trim();
+      return normalized === 'plot' || normalized === 'land';
+    };
+
     // Search filter - search in title, content, address, city, state
+    // Also handle special case: if searching for "plot" or "land", filter by property types
     if (search && typeof search === 'string') {
-      const searchTerm = `%${search}%`;
-      // Supabase OR query syntax: column.ilike.value,column2.ilike.value2
-      // Note: Supabase requires the % wildcards to be part of the value
-      query = query.or(
-        `title.ilike.${searchTerm},content.ilike.${searchTerm},address.ilike.${searchTerm},city.ilike.${searchTerm},state.ilike.${searchTerm}`
-      );
+      const normalizedSearch = search.toLowerCase().trim();
+      
+      // Special handling: if search contains "commercial land", filter only Commercial Land
+      if (normalizedSearch.includes('commercial land')) {
+        query = query.eq('property_type', 'Commercial Land');
+        // If not exact match, also search in title, content, etc.
+        if (normalizedSearch !== 'commercial land') {
+          const searchTerm = `%${search}%`;
+          query = query.or(
+            `title.ilike.${searchTerm},content.ilike.${searchTerm},address.ilike.${searchTerm},city.ilike.${searchTerm},state.ilike.${searchTerm}`
+          );
+        }
+        // If exact "commercial land", show all Commercial Land properties (no text search filter)
+      }
+      // Special handling: if search contains "plot" or "land" (but not "commercial land")
+      else if (isPlotOrLandSearch(search)) {
+        query = query.in('property_type', ['Plot', 'Land', 'Commercial Land']);
+        // If not exact "plot" or "land", also search in title, content, etc.
+        if (!isExactPlotOrLand(search)) {
+          const searchTerm = `%${search}%`;
+          query = query.or(
+            `title.ilike.${searchTerm},content.ilike.${searchTerm},address.ilike.${searchTerm},city.ilike.${searchTerm},state.ilike.${searchTerm}`
+          );
+        }
+        // If exact "plot" or "land", show all Plot, Land, and Commercial Land properties (no text search filter)
+      }
+      // Normal search for other terms
+      else {
+        const searchTerm = `%${search}%`;
+        // Supabase OR query syntax: column.ilike.value,column2.ilike.value2
+        // Note: Supabase requires the % wildcards to be part of the value
+        query = query.or(
+          `title.ilike.${searchTerm},content.ilike.${searchTerm},address.ilike.${searchTerm},city.ilike.${searchTerm},state.ilike.${searchTerm}`
+        );
+      }
     }
 
-    // Property type filter
+    // Property type filter - case-insensitive matching with mapping
+    // Special handling for plot/land to show Plot, Land, and Commercial Land
     if (propertyType && typeof propertyType === 'string') {
-      query = query.eq('property_type', propertyType);
+      // Normalize the input: lowercase and trim
+      const normalizedType = propertyType.toLowerCase().trim();
+      
+      if (process.env.NODE_ENV === 'development') {
+        console.log('Processing propertyType filter:', propertyType, '-> normalized:', normalizedType);
+      }
+      
+      // Special case: "plot" or "land" should show Plot, Land, and Commercial Land
+      if (normalizedType === 'plot' || normalizedType === 'land') {
+        if (process.env.NODE_ENV === 'development') {
+          console.log('Applying plot/land filter: Plot, Land, Commercial Land');
+        }
+        query = query.in('property_type', ['Plot', 'Land', 'Commercial Land']);
+      }
+      // Special case: "commercial land" should show only Commercial Land
+      else if (normalizedType === 'commercial land' || normalizedType === 'commercial lands') {
+        if (process.env.NODE_ENV === 'development') {
+          console.log('Applying commercial land filter: Commercial Land only');
+        }
+        query = query.eq('property_type', 'Commercial Land');
+      }
+      // For other property types, use the mapping
+      else {
+        // Map common variations (including plural/singular and case variations) to database values
+        const propertyTypeMap: { [key: string]: string } = {
+          'house': 'House',
+          'villas': 'Villa',
+          'villa': 'Villa',
+          'flats': 'Flat',
+          'flat': 'Flat',
+          'warehouses': 'Warehouse',
+          'warehouse': 'Warehouse',
+          'commercial buildings': 'Commercial Building',
+          'commercial building': 'Commercial Building',
+          'apartment': 'Apartment',
+          'apartments': 'Apartment',
+          'studio': 'Studio',
+          'penthouse': 'Penthouse',
+          'townhouse': 'Townhouse',
+        };
+        
+        // Use mapped value if available, otherwise capitalize first letter of each word
+        let dbPropertyType: string;
+        if (propertyTypeMap[normalizedType]) {
+          dbPropertyType = propertyTypeMap[normalizedType];
+        } else {
+          // Capitalize first letter of each word as fallback
+          dbPropertyType = propertyType
+            .split(' ')
+            .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+            .join(' ');
+        }
+        
+        if (process.env.NODE_ENV === 'development') {
+          console.log('Applying propertyType filter:', dbPropertyType);
+        }
+        
+        // Use exact match with the normalized database value
+        query = query.eq('property_type', dbPropertyType);
+      }
+    } else if (process.env.NODE_ENV === 'development') {
+      console.log('No propertyType filter applied');
     }
 
     // Selling type filter

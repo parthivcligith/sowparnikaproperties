@@ -44,6 +44,7 @@ export default async function handler(
       propertyType,
       bhk,
       baths,
+      floors,
       sellingType,
       price,
       areaSize,
@@ -64,8 +65,11 @@ export default async function handler(
 
     // Property types that don't require bedrooms/bathrooms
     const landPropertyTypes = ['plot', 'land', 'commercial land'];
+    const commercialPropertyTypes = ['warehouse', 'commercial building'];
     const isLandType = propertyType && landPropertyTypes.includes(propertyType.toLowerCase());
-    const requiresBedroomsBathrooms = !isLandType;
+    const isCommercialType = propertyType && commercialPropertyTypes.includes(propertyType.toLowerCase());
+    const requiresBedroomsBathrooms = !isLandType && !isCommercialType;
+    const isCommercialBuilding = propertyType && propertyType.toLowerCase() === 'commercial building';
 
     // Prepare update data
     const updateData: any = {};
@@ -75,10 +79,24 @@ export default async function handler(
     if (bhk !== undefined) {
       updateData.bhk = requiresBedroomsBathrooms && bhk ? parseInt(bhk) : null;
     }
-    // Only include baths if provided (will be added after migration)
-    if (baths !== undefined && requiresBedroomsBathrooms && baths) {
-      updateData.baths = parseInt(baths);
+    // Only include baths if provided and required
+    if (baths !== undefined) {
+      if (requiresBedroomsBathrooms && baths) {
+        updateData.baths = parseInt(baths);
+      } else {
+        updateData.baths = null;
+      }
     }
+    
+    // Only include floors for Commercial Building
+    if (floors !== undefined) {
+      if (isCommercialBuilding && floors) {
+        updateData.floors = parseInt(floors) || null;
+      } else {
+        updateData.floors = null;
+      }
+    }
+    
     if (sellingType !== undefined) updateData.selling_type = sellingType;
     if (price !== undefined) updateData.price = price ? parseFloat(price) : null;
     if (areaSize !== undefined) updateData.area_size = areaSize ? parseFloat(areaSize) : null;
@@ -115,15 +133,20 @@ export default async function handler(
       .eq('id', id)
       .select();
 
-    // If error is due to missing 'baths' column, retry without it
-    if (error && error.message && error.message.includes('baths')) {
-      console.warn('Baths column not found, retrying without baths field');
-      const updateDataWithoutBaths = { ...updateData };
-      delete updateDataWithoutBaths.baths;
+    // If error is due to missing 'baths' or 'floors' column, retry without it
+    if (error && error.message && (error.message.includes('baths') || error.message.includes('floors'))) {
+      console.warn('Baths or floors column not found, retrying without these fields');
+      const updateDataWithoutOptional = { ...updateData };
+      if (error.message.includes('baths')) {
+        delete updateDataWithoutOptional.baths;
+      }
+      if (error.message.includes('floors')) {
+        delete updateDataWithoutOptional.floors;
+      }
       
       const retryResult = await supabase
         .from('properties')
-        .update(updateDataWithoutBaths)
+        .update(updateDataWithoutOptional)
         .eq('id', id)
         .select();
       

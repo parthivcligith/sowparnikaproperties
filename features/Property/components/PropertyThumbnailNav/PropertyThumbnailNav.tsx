@@ -1,7 +1,6 @@
 import React from 'react';
 import { HStack, Box, Text, VStack } from '@chakra-ui/react';
-import { FiCamera, FiHome, FiMapPin } from 'react-icons/fi';
-import { HiOutlineDocumentText } from 'react-icons/hi';
+import { FiCamera } from 'react-icons/fi';
 
 interface PropertyThumbnailNavProps {
   photos: string[];
@@ -16,9 +15,6 @@ const PropertyThumbnailNav: React.FC<PropertyThumbnailNavProps> = ({
 }) => {
   const tabs = [
     { id: 'photos', label: 'Photos', icon: FiCamera, count: photos.length },
-    { id: 'floorplan', label: 'Floor Plan', icon: HiOutlineDocumentText },
-    { id: 'exterior', label: 'Exterior', icon: FiHome },
-    { id: 'other', label: 'Other', icon: FiMapPin },
   ];
 
   return (

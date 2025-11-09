@@ -12,7 +12,7 @@ import PriceRangeSelector from '@/features/Home/components/PriceRangeSelector/Pr
 const HeroSection = () => {
   const router = useRouter();
   const [searchQuery, setSearchQuery] = useState('');
-  const [propertyType, setPropertyType] = useState('');
+  const [bhk, setBhk] = useState('');
   const [priceRange, setPriceRange] = useState('');
 
   // Background images for carousel
@@ -26,24 +26,48 @@ const HeroSection = () => {
 
   const handleSearch = () => {
     const params = new URLSearchParams();
-    if (searchQuery.trim()) {
+    
+    // Add search query if provided (supports title, address, city search)
+    // Also supports special plot/land search logic handled by API
+    if (searchQuery && searchQuery.trim()) {
       params.append('search', searchQuery.trim());
     }
-    if (propertyType) {
-      params.append('bhk', propertyType);
+    
+    // Add BHK filter if selected
+    if (bhk) {
+      params.append('bhk', bhk);
     }
+    
+    // Add price range filters if set and not default values
     if (priceRange) {
       const [min, max] = priceRange.split('-');
-      if (min && min !== '0') {
-        params.append('minPrice', min);
+      const minNum = parseInt(min) || 0;
+      const maxNum = parseInt(max) || 10000000;
+      
+      // Only add minPrice if it's not 0
+      if (minNum > 0) {
+        params.append('minPrice', minNum.toString());
       }
-      if (max && max !== '10000000') {
-        params.append('maxPrice', max);
+      
+      // Only add maxPrice if it's not the default max (10,000,000)
+      if (maxNum < 10000000) {
+        params.append('maxPrice', maxNum.toString());
       }
     }
+    
     // Always show active properties
     params.append('status', 'active');
-    router.push(`/properties?${params.toString()}`);
+    
+    // Navigate to properties page with filters
+    const queryString = params.toString();
+    router.push(`/properties${queryString ? `?${queryString}` : ''}`);
+  };
+  
+  // Handle Enter key press in search input
+  const handleKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      handleSearch();
+    }
   };
 
   return (
@@ -204,9 +228,10 @@ const HeroSection = () => {
                   <FiMapPin size={20} />
                 </Box>
                 <Input
-                  placeholder="City, Region, Country"
+                  placeholder="Search by title, address, or city..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
+                  onKeyPress={handleKeyPress}
                   border="none"
                   _focus={{ boxShadow: 'none', outline: 'none' }}
                   color="gray.900"
@@ -306,8 +331,8 @@ const HeroSection = () => {
               >
                 <SleekDropdown
                   placeholder="Any beds"
-                  value={propertyType}
-                  onChange={setPropertyType}
+                  value={bhk}
+                  onChange={setBhk}
                   maxW="100%"
                   options={[
                     { value: '', label: 'Any' },

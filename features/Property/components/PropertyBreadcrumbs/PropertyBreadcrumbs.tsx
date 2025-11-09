@@ -1,7 +1,6 @@
 import React from 'react';
 import { Box, Breadcrumb, BreadcrumbItem, BreadcrumbLink, Text } from '@chakra-ui/react';
 import { ChevronRightIcon } from '@chakra-ui/icons';
-import { useRouter } from 'next/router';
 import Link from 'next/link';
 
 interface PropertyBreadcrumbsProps {
@@ -10,7 +9,6 @@ interface PropertyBreadcrumbsProps {
 }
 
 const PropertyBreadcrumbs: React.FC<PropertyBreadcrumbsProps> = ({ city, state }) => {
-  const router = useRouter();
 
   return (
     <Box mb={6}>
@@ -19,6 +17,11 @@ const PropertyBreadcrumbs: React.FC<PropertyBreadcrumbsProps> = ({ city, state }
         fontSize="sm"
         color="gray.600"
       >
+        <BreadcrumbItem>
+          <BreadcrumbLink as={Link} href="/">
+            ← Back to Home Page
+          </BreadcrumbLink>
+        </BreadcrumbItem>
         <BreadcrumbItem>
           <BreadcrumbLink as={Link} href="/properties">
             ← Back to search

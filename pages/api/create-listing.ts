@@ -46,6 +46,7 @@ export default async function handler(
       propertyType,
       bhk,
       baths,
+      floors,
       sellingType,
       price,
       areaSize,
@@ -62,8 +63,11 @@ export default async function handler(
 
     // Property types that don't require bedrooms/bathrooms
     const landPropertyTypes = ['plot', 'land', 'commercial land'];
+    const commercialPropertyTypes = ['warehouse', 'commercial building'];
     const isLandType = propertyType && landPropertyTypes.includes(propertyType.toLowerCase());
-    const requiresBedroomsBathrooms = !isLandType;
+    const isCommercialType = propertyType && commercialPropertyTypes.includes(propertyType.toLowerCase());
+    const requiresBedroomsBathrooms = !isLandType && !isCommercialType;
+    const isCommercialBuilding = propertyType && propertyType.toLowerCase() === 'commercial building';
 
     // Validate required fields
     const missingFields: any = {
@@ -76,10 +80,15 @@ export default async function handler(
       ownerNumber: !ownerNumber,
     };
 
-    // Only require BHK and baths for non-land types
+    // Only require BHK and baths for non-land and non-commercial types
     if (requiresBedroomsBathrooms) {
       missingFields.bhk = !bhk;
       missingFields.baths = !baths;
+    }
+
+    // Require floors for Commercial Building
+    if (isCommercialBuilding) {
+      missingFields.floors = !floors;
     }
 
     const hasMissingFields = Object.values(missingFields).some(Boolean);
@@ -112,9 +121,14 @@ export default async function handler(
       updated_at: new Date().toISOString(),
     };
 
-    // Only include baths if provided (will be added after migration)
+    // Only include baths if provided and required
     if (requiresBedroomsBathrooms && baths) {
       insertData.baths = parseInt(baths);
+    }
+
+    // Only include floors for Commercial Building
+    if (isCommercialBuilding && floors) {
+      insertData.floors = parseInt(floors) || null;
     }
 
     console.log('Attempting to insert:', { ...insertData, owner_number: '***' });
@@ -132,13 +146,18 @@ export default async function handler(
     // Insert into Supabase
     let { data, error } = await supabase.from('properties').insert([insertData]).select();
 
-    // If error is due to missing 'baths' column, retry without it
-    if (error && error.message && error.message.includes('baths')) {
-      console.warn('Baths column not found, retrying without baths field');
-      const insertDataWithoutBaths = { ...insertData };
-      delete insertDataWithoutBaths.baths;
+    // If error is due to missing 'baths' or 'floors' column, retry without it
+    if (error && error.message && (error.message.includes('baths') || error.message.includes('floors'))) {
+      console.warn('Baths or floors column not found, retrying without these fields');
+      const insertDataWithoutOptional = { ...insertData };
+      if (error.message.includes('baths')) {
+        delete insertDataWithoutOptional.baths;
+      }
+      if (error.message.includes('floors')) {
+        delete insertDataWithoutOptional.floors;
+      }
       
-      const retryResult = await supabase.from('properties').insert([insertDataWithoutBaths]).select();
+      const retryResult = await supabase.from('properties').insert([insertDataWithoutOptional]).select();
       data = retryResult.data;
       error = retryResult.error;
     }

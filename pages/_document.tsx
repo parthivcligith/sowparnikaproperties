@@ -17,6 +17,11 @@ export default function Document() {
           crossOrigin="anonymous"
           referrerPolicy="no-referrer"
         />
+        <script
+          src="https://www.google.com/recaptcha/api.js"
+          async
+          defer
+        />
       </Head>
       <body>
         <Main />

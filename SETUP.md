@@ -29,6 +29,9 @@ NEXT_PUBLIC_ADMIN_PASSWORD=your_secure_password
 # Cloudflare Images Configuration (Optional)
 CLOUDFLARE_ACCOUNT_ID=your_cloudflare_account_id
 CLOUDFLARE_API_TOKEN=your_cloudflare_api_token
+
+# Google reCAPTCHA Configuration (Required for contact forms)
+NEXT_PUBLIC_RECAPTCHA_SITE_KEY=your_recaptcha_site_key
 ```
 
 ## Database Setup
@@ -50,6 +53,23 @@ CLOUDFLARE_API_TOKEN=your_cloudflare_api_token
 4. Add them to your `.env.local` file
 
 If Cloudflare is not configured, the app will use placeholder images.
+
+## Google reCAPTCHA Setup
+
+1. Go to [Google reCAPTCHA Admin Console](https://www.google.com/recaptcha/admin)
+2. Click "Create" to create a new site
+3. Fill in the form:
+   - **Label**: Give your site a name (e.g., "Sowparnika Properties")
+   - **reCAPTCHA type**: Select "reCAPTCHA v2" → "I'm not a robot" Checkbox
+   - **Domains**: Add your domain(s):
+     - `localhost` (for local development)
+     - Your production domain (e.g., `yourdomain.com`)
+   - Accept the reCAPTCHA Terms of Service
+   - Click "Submit"
+4. Copy the **Site Key** and add it to your `.env.local` file as `NEXT_PUBLIC_RECAPTCHA_SITE_KEY`
+5. Save your **Secret Key** securely (you may need it for server-side verification later)
+
+**Note**: For local development, you can use the test keys provided by Google, but it's recommended to create your own keys.
 
 ## Running the Application
 

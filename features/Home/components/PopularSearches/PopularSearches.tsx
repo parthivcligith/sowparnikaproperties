@@ -146,11 +146,16 @@ const PopularSearches: React.FC = () => {
 
         {/* Category Cards Grid */}
         <SimpleGrid columns={{ base: 1, sm: 2, lg: 3 }} spacing={6} mb={12}>
-          {displayedCategories.map((category) => (
+          {displayedCategories.map((category) => {
+            // Special handling: Land should show Plot, Land, and Commercial Land
+            // For Land category, use 'Land' as the filter (API will handle showing Plot, Land, Commercial Land)
+            const propertyTypeParam = category.name === 'Land' ? 'Land' : category.propertyType;
+            
+            return (
             <ChakraLink
               key={category.id}
               as={Link}
-              href={`/properties?propertyType=${encodeURIComponent(category.propertyType)}&status=active`}
+              href={`/properties?propertyType=${encodeURIComponent(propertyTypeParam)}&status=active`}
               _hover={{ textDecoration: 'none' }}
               display="block"
               width="100%"
@@ -222,7 +227,8 @@ const PopularSearches: React.FC = () => {
                 </Box>
               </Box>
             </ChakraLink>
-          ))}
+            );
+          })}
         </SimpleGrid>
 
         {/* View All Button */}

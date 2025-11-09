@@ -54,6 +54,7 @@ const EditListingPage = () => {
     propertyType: '',
     bhk: '',
     baths: '',
+    floors: '',
     sellingType: 'Sale',
     price: '',
     areaSize: '',
@@ -68,7 +69,14 @@ const EditListingPage = () => {
 
   // Property types that don't require bedrooms/bathrooms
   const landPropertyTypes = ['plot', 'land', 'commercial land'];
-  const showBedroomsBathrooms = formData.propertyType && !landPropertyTypes.includes(formData.propertyType.toLowerCase());
+  const commercialPropertyTypes = ['warehouse', 'commercial building'];
+  const showBedroomsBathrooms = formData.propertyType && 
+    !landPropertyTypes.includes(formData.propertyType.toLowerCase()) &&
+    !commercialPropertyTypes.includes(formData.propertyType.toLowerCase());
+  
+  // Show floors field only for Commercial Building
+  const showFloors = formData.propertyType && 
+    formData.propertyType.toLowerCase() === 'commercial building';
 
   const [amenities, setAmenities] = useState<string[]>([]);
   const [existingImages, setExistingImages] = useState<string[]>([]);
@@ -112,6 +120,7 @@ const EditListingPage = () => {
           propertyType: property.property_type || '',
           bhk: property.bhk?.toString() || '',
           baths: property.baths?.toString() || '',
+          floors: property.floors?.toString() || '',
           sellingType: property.selling_type || 'Sale',
           price: property.price?.toString() || '',
           areaSize: property.area_size?.toString() || '',
@@ -167,7 +176,19 @@ const EditListingPage = () => {
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
   ) => {
     const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
+    
+    // If property type changes, clear BHK, baths, and floors to prevent stale data
+    if (name === 'propertyType') {
+      setFormData((prev) => ({ 
+        ...prev, 
+        [name]: value,
+        bhk: '',
+        baths: '',
+        floors: '',
+      }));
+    } else {
+      setFormData((prev) => ({ ...prev, [name]: value }));
+    }
   };
 
   const handleContentChange = (value: string) => {
@@ -229,9 +250,11 @@ const EditListingPage = () => {
           ...formData,
           amenities: showBedroomsBathrooms ? amenities : [],
           images: allImages,
-          // Clear BHK and baths for land types
+          // Clear BHK and baths for land types and commercial types
           bhk: showBedroomsBathrooms ? formData.bhk : '',
           baths: showBedroomsBathrooms ? formData.baths : '',
+          // Only include floors for Commercial Building
+          floors: showFloors ? formData.floors : '',
         }),
       });
 
@@ -397,21 +420,68 @@ const EditListingPage = () => {
                         </Select>
                       </FormControl>
 
-                      <FormControl isRequired>
-                        <FormLabel>BHK</FormLabel>
-                        <Select
-                          name="bhk"
-                          value={formData.bhk}
-                          onChange={handleInputChange}
-                        >
-                          <option value="">Select BHK</option>
-                          <option value="1">1 BHK</option>
-                          <option value="2">2 BHK</option>
-                          <option value="3">3 BHK</option>
-                          <option value="4">4 BHK</option>
-                          <option value="5+">5+ BHK</option>
-                        </Select>
-                      </FormControl>
+                      {showBedroomsBathrooms && (
+                        <>
+                          <FormControl isRequired>
+                            <FormLabel>BHK</FormLabel>
+                            <Select
+                              name="bhk"
+                              value={formData.bhk}
+                              onChange={handleInputChange}
+                            >
+                              <option value="">Select BHK</option>
+                              <option value="1">1 BHK</option>
+                              <option value="2">2 BHK</option>
+                              <option value="3">3 BHK</option>
+                              <option value="4">4 BHK</option>
+                              <option value="5">5 BHK</option>
+                              <option value="6">6 BHK</option>
+                              <option value="7+">7+ BHK</option>
+                            </Select>
+                          </FormControl>
+
+                          <FormControl isRequired>
+                            <FormLabel>Bathrooms</FormLabel>
+                            <Select
+                              name="baths"
+                              value={formData.baths}
+                              onChange={handleInputChange}
+                            >
+                              <option value="">Select Bathrooms</option>
+                              <option value="1">1 Bathroom</option>
+                              <option value="2">2 Bathrooms</option>
+                              <option value="3">3 Bathrooms</option>
+                              <option value="4">4 Bathrooms</option>
+                              <option value="5">5 Bathrooms</option>
+                              <option value="6+">6+ Bathrooms</option>
+                            </Select>
+                          </FormControl>
+                        </>
+                      )}
+
+                      {showFloors && (
+                        <FormControl isRequired>
+                          <FormLabel>Number of Floors</FormLabel>
+                          <Select
+                            name="floors"
+                            value={formData.floors}
+                            onChange={handleInputChange}
+                          >
+                            <option value="">Select Floors</option>
+                            <option value="1">1 Floor</option>
+                            <option value="2">2 Floors</option>
+                            <option value="3">3 Floors</option>
+                            <option value="4">4 Floors</option>
+                            <option value="5">5 Floors</option>
+                            <option value="6">6 Floors</option>
+                            <option value="7">7 Floors</option>
+                            <option value="8">8 Floors</option>
+                            <option value="9">9 Floors</option>
+                            <option value="10">10 Floors</option>
+                            <option value="10+">10+ Floors</option>
+                          </Select>
+                        </FormControl>
+                      )}
 
                       <FormControl isRequired>
                         <FormLabel>Selling Type</FormLabel>

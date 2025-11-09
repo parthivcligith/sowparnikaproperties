@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { GetServerSideProps, InferGetServerSidePropsType } from 'next';
 import { usePropertyFormat } from '@/features/common/Hooks/usePropertyFormat';
 import {
@@ -11,19 +11,22 @@ import {
   HStack,
   Icon,
   Badge,
+  Divider,
+  VStack,
 } from '@chakra-ui/react';
 import { TbMapPin, TbEye, TbHeart } from 'react-icons/tb';
-import { FiInfo } from 'react-icons/fi';
+import { FiInfo, FiUser, FiPhone } from 'react-icons/fi';
 import DefaultLayout from '@/features/Layout/DefaultLayout';
 import PropertyImageGallery from '@/features/Property/components/PropertyImageGallery/PropertyImageGallery';
 import PropertyBreadcrumbs from '@/features/Property/components/PropertyBreadcrumbs/PropertyBreadcrumbs';
-import PropertyThumbnailNav from '@/features/Property/components/PropertyThumbnailNav/PropertyThumbnailNav';
 import ContactAgent from '@/features/Property/components/ContactAgent/ContactAgent';
 import { getProperty } from '@/features/Property/API/getProperty';
+import { useAuth } from '@/contexts/AuthContext';
 
 const PropertyDetail = ({
   property,
 }: InferGetServerSidePropsType<typeof getServerSideProps>) => {
+  const { isAuthenticated } = useAuth();
   const {
     address,
     propertyType,
@@ -39,7 +42,6 @@ const PropertyDetail = ({
     amenities,
   } = usePropertyFormat(property);
 
-  const [activeTab, setActiveTab] = useState('photos');
   const images = photos as string[];
   
   // Get property metadata
@@ -49,6 +51,10 @@ const PropertyDetail = ({
   const updatedDate = property.updated_at 
     ? new Date(property.updated_at).toLocaleDateString('en-US', { month: 'long', day: 'numeric' })
     : new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric' });
+  
+  // Get owner information
+  const ownerName = property.owner_name || '';
+  const ownerNumber = property.owner_number || '';
 
   return (
     <DefaultLayout title={title} description={description}>
@@ -114,21 +120,57 @@ const PropertyDetail = ({
                   </HStack>
                 </HStack>
 
-                {/* Thumbnail Navigation */}
-                <PropertyThumbnailNav
-                  photos={images}
-                  onTabChange={setActiveTab}
-                  activeTab={activeTab}
-                />
-
                 {/* Description */}
                 <Box mt={8}>
                   <Text fontSize="lg" fontWeight="600" mb={3} fontFamily="'Playfair Display', serif">
                     Description
                   </Text>
-                  <Text color="gray.700" lineHeight="1.8" fontSize="md">
-                    {description || 'No description available.'}
-                  </Text>
+                  {description ? (
+                    <Box
+                      color="gray.700"
+                      lineHeight="1.8"
+                      fontSize="md"
+                      dangerouslySetInnerHTML={{ __html: description }}
+                      sx={{
+                        '& p': {
+                          marginBottom: '1em',
+                          '&:last-child': {
+                            marginBottom: 0,
+                          },
+                        },
+                        '& h1, & h2, & h3, & h4, & h5, & h6': {
+                          fontWeight: 600,
+                          marginTop: '1.5em',
+                          marginBottom: '0.5em',
+                          fontFamily: "'Playfair Display', serif",
+                        },
+                        '& ul, & ol': {
+                          marginLeft: '1.5em',
+                          marginBottom: '1em',
+                        },
+                        '& li': {
+                          marginBottom: '0.5em',
+                        },
+                        '& a': {
+                          color: 'blue.600',
+                          textDecoration: 'underline',
+                          '&:hover': {
+                            color: 'blue.700',
+                          },
+                        },
+                        '& strong, & b': {
+                          fontWeight: 600,
+                        },
+                        '& em, & i': {
+                          fontStyle: 'italic',
+                        },
+                      }}
+                    />
+                  ) : (
+                    <Text color="gray.700" lineHeight="1.8" fontSize="md">
+                      No description available.
+                    </Text>
+                  )}
                 </Box>
 
                 {/* Amenities */}
@@ -189,6 +231,50 @@ const PropertyDetail = ({
                     </Box>
                   </SimpleGrid>
                 </Box>
+
+                {/* Owner Details - Admin Only */}
+                {isAuthenticated && (ownerName || ownerNumber) && (
+                  <Box mt={8} p={6} border="2px solid" borderColor="gray.200" borderRadius="lg" bg="white">
+                    <HStack spacing={3} mb={4}>
+                      <Icon as={FiUser} boxSize={5} color="gray.700" />
+                      <Text fontSize="lg" fontWeight="600" fontFamily="'Playfair Display', serif" color="gray.800">
+                        Owner Details
+                      </Text>
+                      <Badge colorScheme="blue" fontSize="xs" ml={2}>
+                        Admin Only
+                      </Badge>
+                    </HStack>
+                    <Divider mb={4} />
+                    <VStack align="stretch" spacing={3}>
+                      {ownerName && (
+                        <HStack spacing={3}>
+                          <Icon as={FiUser} color="gray.600" />
+                          <Box>
+                            <Text fontSize="xs" color="gray.600" mb={0.5}>
+                              Owner Name
+                            </Text>
+                            <Text fontSize="md" fontWeight="500" color="gray.900">
+                              {ownerName}
+                            </Text>
+                          </Box>
+                        </HStack>
+                      )}
+                      {ownerNumber && (
+                        <HStack spacing={3}>
+                          <Icon as={FiPhone} color="gray.600" />
+                          <Box>
+                            <Text fontSize="xs" color="gray.600" mb={0.5}>
+                              Contact Number
+                            </Text>
+                            <Text fontSize="md" fontWeight="500" color="gray.900">
+                              {ownerNumber}
+                            </Text>
+                          </Box>
+                        </HStack>
+                      )}
+                    </VStack>
+                  </Box>
+                )}
               </Box>
             </GridItem>
 

@@ -24,12 +24,13 @@ export const navigationLinks: Array<navigationLink> = [
 ];
 
 // Property types in a single horizontal row
+// Note: Links use lowercase values that are mapped to database values in the API
 export const propertyTypes: Array<propertyTypeLink> = [
-  { title: 'Plot', link: '/properties?propertyType=plot' },
-  { title: 'House', link: '/properties?propertyType=house' },
-  { title: 'Villas', link: '/properties?propertyType=villas' },
-  { title: 'Flats', link: '/properties?propertyType=flats' },
-  { title: 'Warehouses', link: '/properties?propertyType=warehouses' },
-  { title: 'Commercial Buildings', link: '/properties?propertyType=commercial buildings' },
-  { title: 'Commercial Lands', link: '/properties?propertyType=commercial lands' },
+  { title: 'Plot', link: '/properties?propertyType=Plot' },
+  { title: 'House', link: '/properties?propertyType=House' },
+  { title: 'Villas', link: '/properties?propertyType=Villa' },
+  { title: 'Flats', link: '/properties?propertyType=Flat' },
+  { title: 'Warehouses', link: '/properties?propertyType=Warehouse' },
+  { title: 'Commercial Buildings', link: '/properties?propertyType=Commercial Building' },
+  { title: 'Commercial Lands', link: '/properties?propertyType=Commercial Land' },
 ];

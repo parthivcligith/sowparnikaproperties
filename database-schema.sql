@@ -9,6 +9,7 @@ CREATE TABLE IF NOT EXISTS public.properties (
   property_type VARCHAR(50),
   bhk INTEGER,
   baths INTEGER,
+  floors INTEGER,
   selling_type VARCHAR(20) CHECK (selling_type IN ('Sale', 'Rent')),
   price DECIMAL(12, 2),
   area_size DECIMAL(10, 2),
