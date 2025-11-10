@@ -32,8 +32,9 @@ import {
   Flex,
   Image,
   Switch,
+  Select,
 } from '@chakra-ui/react';
-import { FiSearch, FiEdit, FiTrash2, FiEye, FiHome } from 'react-icons/fi';
+import { FiSearch, FiEdit, FiTrash2, FiEye, FiHome, FiChevronLeft, FiChevronRight } from 'react-icons/fi';
 import Link from 'next/link';
 import DefaultLayout from '@/features/Layout/DefaultLayout';
 
@@ -58,6 +59,10 @@ const ManageListingsPage = () => {
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [propertyToDelete, setPropertyToDelete] = useState<string | null>(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(10);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalProperties, setTotalProperties] = useState(0);
 
   useEffect(() => {
     if (!isLoading && (!isAuthenticated || !isAdmin)) {
@@ -70,33 +75,77 @@ const ManageListingsPage = () => {
       fetchProperties();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isAuthenticated, isAdmin]);
+  }, [isAuthenticated, isAdmin, currentPage, itemsPerPage]);
+
+  // Reset to page 1 when search query changes
+  useEffect(() => {
+    if (isAuthenticated && isAdmin) {
+      setCurrentPage(1);
+      // Debounce search - wait 500ms after user stops typing
+      const timeoutId = setTimeout(() => {
+        fetchProperties();
+      }, 500);
+      return () => clearTimeout(timeoutId);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchQuery]);
 
   const fetchProperties = async () => {
     try {
       setLoading(true);
-      // Add cache: 'no-store' to prevent stale data
-      const response = await fetch('/api/get-properties?limit=100', {
+      // Build query parameters with pagination and search
+      const params = new URLSearchParams({
+        limit: itemsPerPage.toString(),
+        page: currentPage.toString(),
+      });
+      
+      // Add search query if provided
+      if (searchQuery.trim()) {
+        params.append('search', searchQuery.trim());
+      }
+      
+      // Don't filter by status for admin panel - show all properties
+      // Remove the default 'active' filter by not including status parameter
+      
+      const response = await fetch(`/api/get-properties?${params.toString()}`, {
         cache: 'no-store',
       });
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
       const data = await response.json();
-      if (response.ok) {
-        setProperties(data.properties || []);
+      
+      // Ensure we have valid data structure
+      if (data && typeof data === 'object') {
+        setProperties(Array.isArray(data.properties) ? data.properties : []);
+        setTotalPages(typeof data.totalPages === 'number' && data.totalPages > 0 ? data.totalPages : 1);
+        setTotalProperties(typeof data.total === 'number' ? data.total : 0);
       } else {
+        // Fallback if response structure is unexpected
+        setProperties([]);
+        setTotalPages(1);
+        setTotalProperties(0);
         toast({
-          title: 'Error',
-          description: 'Failed to fetch properties',
-          status: 'error',
+          title: 'Warning',
+          description: 'Received unexpected data format',
+          status: 'warning',
           duration: 3000,
         });
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error fetching properties:', error);
+      // Set empty state on error to prevent crashes
+      setProperties([]);
+      setTotalPages(1);
+      setTotalProperties(0);
       toast({
         title: 'Error',
-        description: 'Failed to fetch properties',
+        description: error?.message || 'Failed to fetch properties. Please try again.',
         status: 'error',
-        duration: 3000,
+        duration: 5000,
+        isClosable: true,
       });
     } finally {
       setLoading(false);
@@ -157,6 +206,7 @@ const ManageListingsPage = () => {
       if (response.ok) {
         // Optimistically remove from UI immediately
         setProperties((prev) => prev.filter((p) => p.id !== id));
+        setTotalProperties((prev) => Math.max(0, prev - 1));
         onClose();
         setPropertyToDelete(null);
         
@@ -168,7 +218,12 @@ const ManageListingsPage = () => {
         });
         
         // Refetch to ensure data is in sync
-        fetchProperties();
+        // If current page becomes empty, go to previous page
+        if (properties.length === 1 && currentPage > 1) {
+          setCurrentPage((prev) => prev - 1);
+        } else {
+          fetchProperties();
+        }
       } else {
         toast({
           title: 'Error',
@@ -200,10 +255,10 @@ const ManageListingsPage = () => {
     }
   };
 
-  const filteredProperties = properties.filter((property) =>
-    property.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    property.city.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  // Search is now handled server-side, so we use properties directly
+  // Note: Using displayedProperties instead of filteredProperties for server-side pagination
+  // Ensure displayedProperties is always an array to prevent runtime errors
+  const displayedProperties = Array.isArray(properties) ? properties : [];
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -312,6 +367,44 @@ const ManageListingsPage = () => {
               />
             </InputGroup>
 
+            {/* Items per page selector */}
+            <Flex justify="space-between" align="center" flexWrap="wrap" gap={4}>
+              <HStack spacing={2}>
+                <Text fontSize="sm" color="gray.700" whiteSpace="nowrap">
+                  Show:
+                </Text>
+                <Select
+                  value={itemsPerPage}
+                  onChange={(e) => {
+                    setItemsPerPage(Number(e.target.value));
+                    setCurrentPage(1);
+                  }}
+                  size="sm"
+                  width="80px"
+                  bg="white"
+                  borderColor="gray.300"
+                  borderRadius="0"
+                  _focus={{
+                    borderColor: 'gray.900',
+                    boxShadow: '0 0 0 1px gray.900',
+                  }}
+                >
+                  <option value={10}>10</option>
+                  <option value={20}>20</option>
+                  <option value={50}>50</option>
+                  <option value={100}>100</option>
+                </Select>
+                <Text fontSize="sm" color="gray.700" whiteSpace="nowrap">
+                  per page
+                </Text>
+              </HStack>
+              {totalProperties > 0 && (
+                <Text fontSize="sm" color="gray.700">
+                  Showing {((currentPage - 1) * itemsPerPage) + 1} to {Math.min(currentPage * itemsPerPage, totalProperties)} of {totalProperties} properties
+                </Text>
+              )}
+            </Flex>
+
             <Box 
               border="2px solid" 
               borderColor="gray.900" 
@@ -339,7 +432,7 @@ const ManageListingsPage = () => {
                 <Box p={8} textAlign="center">
                   <Text color="gray.900">Loading properties...</Text>
                 </Box>
-              ) : filteredProperties.length === 0 ? (
+              ) : displayedProperties.length === 0 ? (
                 <Box p={8} textAlign="center">
                   <Text color="gray.900">No properties found</Text>
                 </Box>
@@ -358,7 +451,7 @@ const ManageListingsPage = () => {
                     </Tr>
                   </Thead>
                   <Tbody>
-                    {filteredProperties.map((property) => (
+                    {displayedProperties.map((property) => (
                       <Tr key={property.id} borderBottom="1px solid" borderColor="gray.200" _hover={{ bg: 'gray.50' }}>
                         <Td py={4}>
                           {property.images && property.images.length > 0 ? (
@@ -471,6 +564,93 @@ const ManageListingsPage = () => {
                 </Table>
               )}
             </Box>
+
+            {/* Pagination Controls */}
+            {totalPages > 1 && (
+              <Flex 
+                justify="center" 
+                align="center" 
+                gap={2} 
+                flexWrap="wrap"
+                pt={4}
+              >
+                <Button
+                  onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
+                  isDisabled={currentPage === 1}
+                  leftIcon={<FiChevronLeft />}
+                  variant="outline"
+                  borderColor="gray.900"
+                  color="gray.900"
+                  borderRadius="0"
+                  _hover={{
+                    bg: 'gray.900',
+                    color: 'white',
+                  }}
+                  _disabled={{
+                    opacity: 0.5,
+                    cursor: 'not-allowed',
+                  }}
+                  size="sm"
+                >
+                  Previous
+                </Button>
+                
+                {/* Page Numbers */}
+                <HStack spacing={1}>
+                  {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                    let pageNum: number;
+                    if (totalPages <= 5) {
+                      pageNum = i + 1;
+                    } else if (currentPage <= 3) {
+                      pageNum = i + 1;
+                    } else if (currentPage >= totalPages - 2) {
+                      pageNum = totalPages - 4 + i;
+                    } else {
+                      pageNum = currentPage - 2 + i;
+                    }
+                    
+                    return (
+                      <Button
+                        key={pageNum}
+                        onClick={() => setCurrentPage(pageNum)}
+                        bg={currentPage === pageNum ? 'gray.900' : 'white'}
+                        color={currentPage === pageNum ? 'white' : 'gray.900'}
+                        borderColor="gray.900"
+                        borderRadius="0"
+                        _hover={{
+                          bg: currentPage === pageNum ? 'gray.800' : 'gray.100',
+                        }}
+                        size="sm"
+                        minW="40px"
+                      >
+                        {pageNum}
+                      </Button>
+                    );
+                  })}
+                </HStack>
+                
+                <Button
+                  onClick={() => setCurrentPage((prev) => Math.min(totalPages, prev + 1))}
+                  isDisabled={currentPage === totalPages}
+                  rightIcon={<FiChevronRight />}
+                  variant="outline"
+                  borderColor="gray.900"
+                  color="gray.900"
+                  borderRadius="0"
+                  _hover={{
+                    bg: 'gray.900',
+                    color: 'white',
+                  }}
+                  _disabled={{
+                    opacity: 0.5,
+                    cursor: 'not-allowed',
+                  }}
+                  size="sm"
+                >
+                  Next
+                </Button>
+              </Flex>
+            )}
           </VStack>
         </Container>
       </Box>

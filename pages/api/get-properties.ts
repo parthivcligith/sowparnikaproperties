@@ -204,10 +204,10 @@ export default async function handler(
     // Status filter
     if (status && typeof status === 'string') {
       query = query.eq('status', status);
-    } else if (!featured) {
-      // Default to active properties only (unless filtering by featured)
-      query = query.eq('status', 'active');
     }
+    // Note: For admin panel, we don't filter by status by default
+    // This allows admins to see all properties regardless of status
+    // Only filter by status if explicitly requested
 
     // Featured filter
     if (featured && typeof featured === 'string') {
@@ -234,7 +234,14 @@ export default async function handler(
 
     if (error) {
       console.error('Supabase error:', error);
-      return res.status(500).json({ error: error.message });
+      return res.status(500).json({ 
+        error: error.message,
+        properties: [],
+        total: 0,
+        page: pageNum,
+        limit: limitNum,
+        totalPages: 0,
+      });
     }
 
     // Process properties to ensure images array is properly formatted
@@ -259,16 +266,28 @@ export default async function handler(
       };
     });
 
+    // Ensure count is a number and limitNum is not zero
+    const totalCount = typeof count === 'number' ? count : 0;
+    const safeLimit = limitNum > 0 ? limitNum : 20;
+    const totalPages = safeLimit > 0 ? Math.ceil(totalCount / safeLimit) : 0;
+
     return res.status(200).json({
-      properties: processedProperties,
-      total: count || 0,
+      properties: processedProperties || [],
+      total: totalCount,
       page: pageNum,
-      limit: limitNum,
-      totalPages: Math.ceil((count || 0) / limitNum),
+      limit: safeLimit,
+      totalPages: totalPages,
     });
   } catch (error: any) {
     console.error('Get properties error:', error);
-    return res.status(500).json({ error: 'Failed to fetch properties' });
+    return res.status(500).json({ 
+      error: error?.message || 'Failed to fetch properties',
+      properties: [],
+      total: 0,
+      page: 1,
+      limit: 20,
+      totalPages: 0,
+    });
   }
 }
 
