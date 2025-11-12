@@ -49,6 +49,8 @@ export default async function handler(
       price,
       areaSize,
       areaUnit,
+      landArea,
+      landAreaUnit,
       city,
       address,
       state,
@@ -66,11 +68,13 @@ export default async function handler(
 
     // Property types that don't require bedrooms/bathrooms
     const landPropertyTypes = ['plot', 'land', 'commercial land'];
-    const commercialPropertyTypes = ['warehouse', 'commercial building'];
+    const commercialPropertyTypes = ['warehouse', 'commercial building', 'commercial space/office space'];
     const isLandType = propertyType && landPropertyTypes.includes(propertyType.toLowerCase());
     const isCommercialType = propertyType && commercialPropertyTypes.includes(propertyType.toLowerCase());
     const requiresBedroomsBathrooms = !isLandType && !isCommercialType;
-    const isCommercialBuilding = propertyType && propertyType.toLowerCase() === 'commercial building';
+    const isCommercialBuilding = propertyType && 
+      (propertyType.toLowerCase() === 'commercial building' || 
+       propertyType.toLowerCase() === 'commercial space/office space');
 
     // Prepare update data
     const updateData: any = {};
@@ -89,10 +93,10 @@ export default async function handler(
       }
     }
     
-    // Only include floors for Commercial Building
+    // Only include floors for Commercial Building (handle "Ground Floor" as string)
     if (floors !== undefined) {
       if (isCommercialBuilding && floors) {
-        updateData.floors = parseInt(floors) || null;
+        updateData.floors = floors === 'Ground Floor' ? 'Ground Floor' : (parseInt(floors) || null);
       } else {
         updateData.floors = null;
       }
@@ -102,6 +106,8 @@ export default async function handler(
     if (price !== undefined) updateData.price = price ? parseFloat(price) : null;
     if (areaSize !== undefined) updateData.area_size = areaSize ? parseFloat(areaSize) : null;
     if (areaUnit !== undefined) updateData.area_unit = areaUnit;
+    if (landArea !== undefined) updateData.land_area = landArea ? parseFloat(landArea) : null;
+    if (landAreaUnit !== undefined) updateData.land_area_unit = landAreaUnit;
     if (city !== undefined) updateData.city = city;
     if (address !== undefined) updateData.address = address;
     if (state !== undefined) updateData.state = state;

@@ -14,6 +14,8 @@ CREATE TABLE IF NOT EXISTS public.properties (
   price DECIMAL(12, 2),
   area_size DECIMAL(10, 2),
   area_unit VARCHAR(20),
+  land_area DECIMAL(10, 2),
+  land_area_unit VARCHAR(20) DEFAULT 'Cent',
   city VARCHAR(100),
   address TEXT,
   state VARCHAR(100),

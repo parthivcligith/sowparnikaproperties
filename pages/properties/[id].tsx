@@ -41,6 +41,9 @@ const PropertyDetail = ({
     baths,
     purpose,
     sqSize,
+    areaUnit,
+    landArea,
+    landAreaUnit,
     externalID,
     photos,
     description,
@@ -52,6 +55,9 @@ const PropertyDetail = ({
   // Get property metadata
   const propertyCity = property.city || '';
   const propertyState = property.state || '';
+  // For House and Villa, show area and land area if available, otherwise show regular area
+  const isHouseOrVilla = propertyType?.toLowerCase() === 'house' || propertyType?.toLowerCase() === 'villa';
+  const hasLandArea = landArea && isHouseOrVilla;
   const lotSize = property.area_size ? `${property.area_size} ${property.area_unit || 'sq ft'}` : sqSize;
   const updatedDate = property.updated_at 
     ? new Date(property.updated_at).toLocaleDateString('en-US', { month: 'long', day: 'numeric' })
@@ -303,10 +309,17 @@ const PropertyDetail = ({
                 </Flex>
 
                 {/* Lot Size and Location */}
-                <HStack spacing={4} mb={4} color="gray.600" fontSize="sm">
+                <HStack spacing={4} mb={4} color="gray.600" fontSize="sm" flexWrap="wrap">
                   {lotSize && (
                     <Text>
-                      <strong>{lotSize}</strong> lot
+                      <strong>{lotSize}</strong>
+                    </Text>
+                  )}
+                  {hasLandArea && (
+                    <Text>
+                      <strong>Land Area:</strong> {parseFloat(landArea) % 1 === 0 
+                        ? parseInt(landArea).toLocaleString('en-IN') 
+                        : parseFloat(landArea).toLocaleString('en-IN', { maximumFractionDigits: 0 })} {landAreaUnit || 'Cent'}
                     </Text>
                   )}
                   <HStack spacing={1}>

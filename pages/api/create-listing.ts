@@ -51,6 +51,8 @@ export default async function handler(
       price,
       areaSize,
       areaUnit,
+      landArea,
+      landAreaUnit,
       city,
       address,
       state,
@@ -63,11 +65,13 @@ export default async function handler(
 
     // Property types that don't require bedrooms/bathrooms
     const landPropertyTypes = ['plot', 'land', 'commercial land'];
-    const commercialPropertyTypes = ['warehouse', 'commercial building'];
+    const commercialPropertyTypes = ['warehouse', 'commercial building', 'commercial space/office space'];
     const isLandType = propertyType && landPropertyTypes.includes(propertyType.toLowerCase());
     const isCommercialType = propertyType && commercialPropertyTypes.includes(propertyType.toLowerCase());
     const requiresBedroomsBathrooms = !isLandType && !isCommercialType;
-    const isCommercialBuilding = propertyType && propertyType.toLowerCase() === 'commercial building';
+    const isCommercialBuilding = propertyType && 
+      (propertyType.toLowerCase() === 'commercial building' || 
+       propertyType.toLowerCase() === 'commercial space/office space');
 
     // Validate required fields
     const missingFields: any = {
@@ -109,6 +113,8 @@ export default async function handler(
       price: price ? parseFloat(price) : null,
       area_size: areaSize ? parseFloat(areaSize) : null,
       area_unit: areaUnit || 'Sq. Ft.',
+      land_area: landArea ? parseFloat(landArea) : null,
+      land_area_unit: landAreaUnit || 'Cent',
       city,
       address,
       state: state || '',
@@ -126,9 +132,9 @@ export default async function handler(
       insertData.baths = parseInt(baths);
     }
 
-    // Only include floors for Commercial Building
+    // Only include floors for Commercial Building (handle "Ground Floor" as string)
     if (isCommercialBuilding && floors) {
-      insertData.floors = parseInt(floors) || null;
+      insertData.floors = floors === 'Ground Floor' ? 'Ground Floor' : (parseInt(floors) || null);
     }
 
     // Check if Supabase is configured

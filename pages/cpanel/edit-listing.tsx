@@ -60,6 +60,8 @@ const EditListingPage = () => {
     price: '',
     areaSize: '',
     areaUnit: 'Sq. Ft.',
+    landArea: '',
+    landAreaUnit: 'Cent',
     city: '',
     address: '',
     state: 'Kerala',
@@ -70,14 +72,19 @@ const EditListingPage = () => {
 
   // Property types that don't require bedrooms/bathrooms
   const landPropertyTypes = ['plot', 'land', 'commercial land'];
-  const commercialPropertyTypes = ['warehouse', 'commercial building'];
+  const commercialPropertyTypes = ['warehouse', 'commercial building', 'commercial space/office space'];
   const showBedroomsBathrooms = formData.propertyType && 
     !landPropertyTypes.includes(formData.propertyType.toLowerCase()) &&
     !commercialPropertyTypes.includes(formData.propertyType.toLowerCase());
   
-  // Show floors field only for Commercial Building
+  // Show floors field for Commercial Building and Commercial Space/Office Space
   const showFloors = formData.propertyType && 
-    formData.propertyType.toLowerCase() === 'commercial building';
+    (formData.propertyType.toLowerCase() === 'commercial building' || 
+     formData.propertyType.toLowerCase() === 'commercial space/office space');
+  
+  // Show land area field for House and Villa
+  const showLandArea = formData.propertyType && 
+    (formData.propertyType.toLowerCase() === 'house' || formData.propertyType.toLowerCase() === 'villa');
 
   const [amenities, setAmenities] = useState<string[]>([]);
   const [existingImages, setExistingImages] = useState<string[]>([]);
@@ -127,6 +134,8 @@ const EditListingPage = () => {
           price: property.price?.toString() || '',
           areaSize: property.area_size?.toString() || '',
           areaUnit: property.area_unit || 'Sq. Ft.',
+          landArea: property.land_area?.toString() || '',
+          landAreaUnit: property.land_area_unit || 'Cent',
           city: property.city || '',
           address: property.address || '',
           state: property.state || 'Kerala',
@@ -181,12 +190,15 @@ const EditListingPage = () => {
     
     // If property type changes, clear BHK, baths, and floors to prevent stale data
     if (name === 'propertyType') {
+      const isHouseOrVilla = value.toLowerCase() === 'house' || value.toLowerCase() === 'villa';
       setFormData((prev) => ({ 
         ...prev, 
         [name]: value,
         bhk: '',
         baths: '',
         floors: '',
+        // Clear land area if not House/Villa
+        landArea: isHouseOrVilla ? prev.landArea : '',
       }));
     } else {
       setFormData((prev) => ({ ...prev, [name]: value }));
@@ -335,6 +347,9 @@ const EditListingPage = () => {
           baths: showBedroomsBathrooms ? formData.baths : '',
           // Only include floors for Commercial Building
           floors: showFloors ? formData.floors : '',
+          // Only include land area for House and Villa
+          landArea: showLandArea ? formData.landArea : '',
+          landAreaUnit: showLandArea ? formData.landAreaUnit : '',
         }),
       });
 
@@ -523,6 +538,7 @@ const EditListingPage = () => {
                           <option value="Commercial Land">Commercial Land</option>
                           <option value="Warehouse">Warehouse</option>
                           <option value="Commercial Building">Commercial Building</option>
+                          <option value="Commercial Space/Office Space">Commercial Space/Office Space</option>
                         </Select>
                       </FormControl>
 
@@ -574,6 +590,7 @@ const EditListingPage = () => {
                             onChange={handleInputChange}
                           >
                             <option value="">Select Floors</option>
+                            <option value="Ground Floor">Ground Floor</option>
                             <option value="1">1 Floor</option>
                             <option value="2">2 Floors</option>
                             <option value="3">3 Floors</option>
@@ -671,6 +688,61 @@ const EditListingPage = () => {
                           </Select>
                         </HStack>
                       </FormControl>
+
+                      {showLandArea && (
+                        <FormControl>
+                          <FormLabel color="gray.900" fontWeight="600" fontSize="sm" letterSpacing="0.05em" textTransform="uppercase">
+                            Land Area / Plot Area
+                          </FormLabel>
+                            <HStack spacing={2}>
+                              <Input
+                                name="landArea"
+                                type="number"
+                                value={formData.landArea}
+                                onChange={handleInputChange}
+                                placeholder="Enter land area"
+                                bg="white"
+                                borderColor="gray.300"
+                                color="gray.900"
+                                borderRadius="0"
+                                _placeholder={{ color: 'gray.400' }}
+                                _focus={{
+                                  borderColor: 'gray.900',
+                                  boxShadow: '0 0 0 1px gray.900',
+                                }}
+                                flex="1"
+                                minW="0"
+                              />
+                              <Select
+                                name="landAreaUnit"
+                                value={formData.landAreaUnit}
+                                onChange={handleInputChange}
+                                bg="white"
+                                borderColor="gray.300"
+                                color="gray.900"
+                                borderRadius="0"
+                                _focus={{
+                                  borderColor: 'gray.900',
+                                  boxShadow: '0 0 0 1px gray.900',
+                                }}
+                                flex="1"
+                                minW="0"
+                              >
+                                <option value="Cent">Cent</option>
+                                <option value="Cents">Cents</option>
+                                <option value="Acre">Acre</option>
+                                <option value="Acres">Acres</option>
+                                <option value="Sq. Ft.">Sq. Ft.</option>
+                                <option value="Sq. M.">Sq. M.</option>
+                                <option value="Sq. Yd.">Sq. Yd.</option>
+                                <option value="Ground">Ground</option>
+                                <option value="Grounds">Grounds</option>
+                                <option value="Gunta">Gunta</option>
+                                <option value="Guntas">Guntas</option>
+                            </Select>
+                          </HStack>
+                        </FormControl>
+                      )}
 
                       <FormControl isRequired>
                         <FormLabel>City</FormLabel>

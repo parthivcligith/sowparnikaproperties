@@ -31,6 +31,8 @@ const PropertyCard = memo((property: Object) => {
     purpose,
     sqSize,
     areaUnit,
+    landArea,
+    landAreaUnit,
     externalID,
     photos,
   } = usePropertyFormat(property);
@@ -385,6 +387,7 @@ const PropertyCard = memo((property: Object) => {
             fontWeight="500"
             mt={2}
             pt={1}
+            flexWrap="wrap"
           >
             {rooms !== null && rooms !== undefined && (
               <Flex alignItems="center" gap={1.5}>
@@ -398,17 +401,44 @@ const PropertyCard = memo((property: Object) => {
                 <Text>{baths}</Text>
               </Flex>
             )}
-            <Flex alignItems="center" gap={1.5}>
-              <TbRuler size={16} />
-              <Text>
-                {sqSize && sqSize !== '0.00' 
-                  ? (parseFloat(sqSize) % 1 === 0 
-                      ? parseInt(sqSize).toLocaleString('en-IN') 
-                      : parseFloat(sqSize).toLocaleString('en-IN', { maximumFractionDigits: 0 }))
-                  : '0'}
-              </Text>
-              <Text as="span" fontSize="xs">{areaUnit || 'sq ft'}</Text>
-            </Flex>
+            {/* Show area and land area for House and Villa, otherwise show regular area */}
+            {(landArea && (propertyType?.toLowerCase() === 'house' || propertyType?.toLowerCase() === 'villa')) ? (
+              <>
+                <Flex alignItems="center" gap={1.5}>
+                  <TbRuler size={16} />
+                  <Text>
+                    {sqSize && sqSize !== '0.00' 
+                      ? (parseFloat(sqSize) % 1 === 0 
+                          ? parseInt(sqSize).toLocaleString('en-IN') 
+                          : parseFloat(sqSize).toLocaleString('en-IN', { maximumFractionDigits: 0 }))
+                      : '0'}
+                  </Text>
+                  <Text as="span" fontSize="xs">{areaUnit || 'sq ft'}</Text>
+                </Flex>
+                <Flex alignItems="center" gap={1.5}>
+                  <TbRuler size={16} />
+                  <Text>
+                    {parseFloat(landArea) % 1 === 0 
+                      ? parseInt(landArea).toLocaleString('en-IN') 
+                      : parseFloat(landArea).toLocaleString('en-IN', { maximumFractionDigits: 0 })}
+                  </Text>
+                  <Text as="span" fontSize="xs">{landAreaUnit || 'Cent'}</Text>
+                  <Text as="span" fontSize="xs" color="gray.500"> (Land)</Text>
+                </Flex>
+              </>
+            ) : (
+              <Flex alignItems="center" gap={1.5}>
+                <TbRuler size={16} />
+                <Text>
+                  {sqSize && sqSize !== '0.00' 
+                    ? (parseFloat(sqSize) % 1 === 0 
+                        ? parseInt(sqSize).toLocaleString('en-IN') 
+                        : parseFloat(sqSize).toLocaleString('en-IN', { maximumFractionDigits: 0 }))
+                    : '0'}
+                </Text>
+                <Text as="span" fontSize="xs">{areaUnit || 'sq ft'}</Text>
+              </Flex>
+            )}
           </HStack>
         </Box>
       </Link>

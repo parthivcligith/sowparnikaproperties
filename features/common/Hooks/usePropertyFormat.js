@@ -92,6 +92,14 @@ export const usePropertyFormat = (property) => {
     ? (property.area_unit || 'sq ft')
     : 'm²';
   
+  // Land area (for House and Villa)
+  const landArea = isDatabaseProperty
+    ? (property.land_area ? property.land_area.toFixed(2) : null)
+    : null;
+  const landAreaUnit = isDatabaseProperty
+    ? (property.land_area_unit || 'Cent')
+    : null;
+  
   // External ID
   const externalID = isDatabaseProperty 
     ? (property.id || '') 
@@ -156,6 +164,8 @@ export const usePropertyFormat = (property) => {
     purpose,
     sqSize,
     areaUnit,
+    landArea,
+    landAreaUnit,
     externalID,
     photos,
     description,
