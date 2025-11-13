@@ -16,7 +16,7 @@ const FeatureHighlights: React.FC = () => {
       title: "All The World's Luxury Listings",
       description: (
         <>
-          We work with <Text as="span" fontWeight="700">16,000</Text> leading luxury real estate offices globally to give you access to over <Text as="span" fontWeight="700">400,000</Text> of the finest listings.
+          Partnering with <Text as="span" fontWeight="700">Kerala’s leading real estate experts</Text>, we offer you exclusive access to <Text as="span" fontWeight="700">the finest luxury homes and prime listings</Text> across God’s Own Country.
         </>
       ),
     },
