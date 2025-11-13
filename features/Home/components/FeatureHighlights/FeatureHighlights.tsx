@@ -34,7 +34,7 @@ const FeatureHighlights: React.FC = () => {
       title: "Direct Market Contact",
       description: (
         <>
-          Our inventory is updated several times daily, allowing for <Text as="span" fontWeight="700">3,000</Text> new listings per day, <Text as="span" fontWeight="700">real time market prices and direct contact</Text> with listing agents.
+          Our inventory is updated several times daily, allowing for <Text as="span" fontWeight="700"></Text> new listings per day, <Text as="span" fontWeight="700">real time market prices and direct contact</Text> with listing agents.
         </>
       ),
     },
